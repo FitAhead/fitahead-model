@@ -5,8 +5,12 @@ import math
 from . import geom, morphs, vecmath as vm
 from .rig import PART_BONES, build_rig
 
-SEGMENTS_TORSO = 28
-SEGMENTS_LIMB = 18
+#: The torso carries abdominal definition, which needs enough resolution to
+#: resolve two rectus straps and the transverse lines between them. Below about
+#: 40 segments the six-pack turns into a single lumpy panel.
+SEGMENTS_TORSO = 48
+TORSO_SUBDIVISIONS = 4
+SEGMENTS_LIMB = 20
 
 
 class MeshGroup:
@@ -28,6 +32,7 @@ class Character:
     def __init__(self, params):
         self.p = params
         self.rig = build_rig(params)
+        self.morph_groups = morphs.build_groups(params)
         self.groups = []
         self._build()
 
@@ -49,7 +54,7 @@ class Character:
         geom.spherical_cap(
             face, head_c, p.head_r * h,
             half_angle=math.asin(min(p.face_r_ratio, 0.995)),
-            part="face", scale=(1.0, 1.05, p.head_squash_z),
+            part="face", scale=(1.0, p.head_squash_y, p.head_squash_z),
             segments=40, rings=12,
         )
         face.compute_normals()
@@ -70,39 +75,46 @@ class Character:
             if group.morphable:
                 self._bake_morphs(group, ctx)
 
+    def _upper_chest_y(self):
+        p = self.p
+        return p.chest_y + (p.shoulder_y - p.chest_y) * 0.62
+
     def _torso_sections(self):
         """Key cross-sections of the torso, bottom to top."""
         p = self.p
+        uc = self._upper_chest_y()
         return [
             # the bottom sits high enough that the thigh caps cover it; a lower
             # bottom shows its end cap through the gap between the legs
             (p.crotch_y - 0.008, p.hip_rx * 0.84, p.hip_rz * 0.86),
-            (0.510, p.hip_rx * 0.97, p.hip_rz * 0.96),
+            (p.crotch_y + 0.025, p.hip_rx * 0.97, p.hip_rz * 0.96),
             (p.hip_y, p.hip_rx, p.hip_rz),
             (p.waist_y, p.waist_rx, p.waist_rz),
             (p.waist_y + (p.chest_y - p.waist_y) * 0.55,
-             p.waist_rx + (p.chest_rx - p.waist_rx) * 0.62,
-             p.waist_rz + (p.chest_rz - p.waist_rz) * 0.62),
+             p.waist_rx + (p.chest_rx - p.waist_rx) * 0.66,
+             p.waist_rz + (p.chest_rz - p.waist_rz) * 0.66),
             (p.chest_y, p.chest_rx, p.chest_rz),
-            (p.shoulder_y - 0.024, p.shoulder_rx * 0.99, p.shoulder_rz),
+            (uc, p.shoulder_rx * 0.97, p.shoulder_rz * 1.0),
             (p.shoulder_y, p.shoulder_rx, p.shoulder_rz),
-            # trapezius: slope up to the neck over enough distance that the
-            # shoulder line does not read as a flat shelf
-            (p.shoulder_y + 0.014, p.shoulder_rx * 0.80, p.shoulder_rz * 0.92),
-            (p.shoulder_y + 0.026, p.shoulder_rx * 0.52, p.shoulder_rz * 0.74),
-            (p.neck_y + 0.006, p.neck_r * 1.55, p.neck_r * 1.62),
+            # trapezius slope: long enough that the shoulder line does not read
+            # as a flat shelf with a head balanced on it
+            (p.shoulder_y + 0.016, p.shoulder_rx * 0.70, p.shoulder_rz * 0.86),
+            (p.shoulder_y + 0.032, p.shoulder_rx * 0.36, p.shoulder_rz * 0.62),
+            # stop at the neck radius: any wider and the torso reads as a collar
+            # with the neck hidden inside it
+            (p.neck_y - 0.012, p.neck_r * 1.12, p.neck_r * 1.18),
         ]
 
-    def _resample(self, sections, subdivisions=3):
-        """Linearly subdivide key sections into a smooth ring stack."""
+    def _resample(self, sections, subdivisions=TORSO_SUBDIVISIONS):
+        """Subdivide key sections into a smooth ring stack."""
         rings = []
         for i in range(len(sections) - 1):
             y0, rx0, rz0 = sections[i]
             y1, rx1, rz1 = sections[i + 1]
             for s in range(subdivisions):
                 t = s / subdivisions
-                # ease the interpolation so the silhouette curves rather than
-                # showing straight facets between key sections
+                # ease the radius so the silhouette curves rather than showing
+                # straight facets between key sections
                 e = t * t * (3.0 - 2.0 * t)
                 rings.append((y0 + (y1 - y0) * t,
                               rx0 + (rx1 - rx0) * e,
@@ -122,16 +134,16 @@ class Character:
 
     def _build_head_and_neck(self, mesh):
         p, rig, h = self.p, self.rig, self.p.height
-        neck_base = (0.0, p.neck_y * h - 0.012 * h, 0.0)
+        neck_base = (0.0, (p.shoulder_y + 0.012) * h, 0.0)
         head_c = rig.world("Head")
-        neck_top = (0.0, head_c[1] - p.head_r * h * 0.72, 0.0)
+        neck_top = (0.0, head_c[1] - p.head_r * h * 0.70, 0.0)
         geom.tube(mesh, neck_base, neck_top,
-                  p.neck_r * h * 1.25, p.neck_r * h * 0.95,
-                  "neck", segments=SEGMENTS_LIMB, slices=3,
+                  p.neck_r * h * 1.04, p.neck_r * h * 0.92,
+                  "neck", segments=SEGMENTS_LIMB, slices=5,
                   cap_start=False, cap_end=False)
         geom.sphere(mesh, head_c, p.head_r * h, "head",
                     segments=32, rings=24,
-                    scale=(1.0, 1.05, p.head_squash_z))
+                    scale=(1.0, p.head_squash_y, p.head_squash_z))
 
     def _build_arm(self, mesh, side):
         p, rig, h = self.p, self.rig, self.p.height
@@ -140,26 +152,26 @@ class Character:
         wrist = rig.world(f"Hand_{side}")
 
         # The deltoid is the upper arm's own rounded cap rather than a separate
-        # sphere: a standalone ball leaves a visible crease where it meets the
-        # tube, and the crease is exactly where the shoulders morph swells.
-        elbow_r = p.forearm_r * h * 1.16
+        # sphere: a standalone ball leaves a crease where it meets the tube, and
+        # the crease is exactly where the delts morph swells. The cap radius is
+        # generous enough to overlap the torso, so the joint reads as continuous.
+        elbow_r = p.forearm_r * h * 1.12
         geom.tube(mesh, upper, elbow,
                   p.upperarm_r * h, elbow_r,
-                  f"upperarm_{side}", segments=SEGMENTS_LIMB, slices=10,
-                  bulge=p.biceps_bulge * h, bulge_center=0.40,
+                  f"upperarm_{side}", segments=SEGMENTS_LIMB, slices=12,
                   cap_start=False, cap_end=False,
-                  round_start=p.upperarm_r * h * 1.15)
+                  round_start=p.upperarm_r * h * 1.25)
         # matching radii across the elbow keep the two tubes seamless
         geom.tube(mesh, elbow, wrist,
-                  elbow_r, p.forearm_r * h * 0.78,
-                  f"forearm_{side}", segments=SEGMENTS_LIMB, slices=8,
+                  elbow_r, p.wrist_r * h * 1.20,
+                  f"forearm_{side}", segments=SEGMENTS_LIMB, slices=10,
                   cap_start=False, cap_end=False)
 
         # mitten-shaped hand: flattened front-to-back, elongated down the arm
         arm_dir = vm.normalize(vm.sub(wrist, elbow))
         hand_c = vm.add(wrist, vm.mul(arm_dir, p.hand_r * h * 0.55))
         geom.sphere(mesh, hand_c, p.hand_r * h, f"hand_{side}",
-                    segments=18, rings=14, scale=(0.66, 1.28, 0.50))
+                    segments=18, rings=14, scale=(0.60, 1.30, 0.42))
 
     def _build_leg(self, mesh, side):
         p, rig, h = self.p, self.rig, self.p.height
@@ -168,21 +180,19 @@ class Character:
         ankle = rig.world(f"Foot_{side}")
         toe = rig.world(f"Toe_{side}")
 
-        knee_r = p.shin_r * h * 1.12
+        knee_r = p.shin_r * h * 1.06
         # the thigh's start cap reaches up over the crotch and hides where the
         # torso loft is capped off
         geom.tube(mesh, hip, knee,
                   p.thigh_r * h, knee_r,
-                  f"thigh_{side}", segments=SEGMENTS_LIMB, slices=10,
-                  bulge=p.thigh_r * h * 0.05, bulge_center=0.28,
+                  f"thigh_{side}", segments=SEGMENTS_LIMB, slices=12,
                   cap_end=False, round_start=p.thigh_r * h * 0.95)
         geom.tube(mesh, knee, ankle,
-                  knee_r, p.shin_r * h * 0.56,
-                  f"shin_{side}", segments=SEGMENTS_LIMB, slices=10,
-                  bulge=p.calf_bulge * h, bulge_center=0.26,
+                  knee_r, p.ankle_r * h * 1.25,
+                  f"shin_{side}", segments=SEGMENTS_LIMB, slices=12,
                   cap_start=False, cap_end=False)
         geom.tube(mesh, ankle, toe,
-                  p.foot_r * h * 0.74, p.foot_r * h * 0.52,
+                  p.foot_r * h * 0.78, p.foot_r * h * 0.52,
                   f"foot_{side}", segments=SEGMENTS_LIMB, slices=5,
                   round_start=p.foot_r * h * 0.62,
                   round_end=p.foot_r * h * 0.50)
@@ -195,12 +205,15 @@ class Character:
         with whatever is underneath it.
         """
         p, rig, h = self.p, self.rig, self.p.height
-        pad = 1.055
+        pad = 1.042
 
         shorts = [
             (y, rx * pad, rz * pad)
             for (y, rx, rz) in self._resample(self._torso_sections())
-            if p.crotch_y - 0.01 <= y <= p.hip_y + 0.048
+            # the waistband sits ON the hip, below where the abdominal fat morph
+            # starts: any higher and the shorts inflate with the belly and read
+            # as a nappy rather than as athletic shorts
+            if p.crotch_y - 0.018 <= y <= p.hip_y + 0.016
         ]
         # both ends open: a capped waistband would show a disc floating between
         # the legs, and the body underneath already closes the silhouette
@@ -218,9 +231,9 @@ class Character:
             thigh_len = vm.length(vm.sub(knee, hip))
             # start above the hip joint so the cuff overlaps the waistband
             geom.tube(mesh,
-                      vm.add(hip, vm.mul(leg_dir, -thigh_len * 0.22)),
-                      vm.add(hip, vm.mul(leg_dir, thigh_len * 0.40)),
-                      p.thigh_r * h * pad, p.thigh_r * h * 0.90 * pad,
+                      vm.add(hip, vm.mul(leg_dir, -thigh_len * 0.34)),
+                      vm.add(hip, vm.mul(leg_dir, thigh_len * 0.52)),
+                      p.thigh_r * h * pad, p.thigh_r * h * 0.92 * pad,
                       f"thigh_{side}", segments=SEGMENTS_LIMB, slices=5,
                       cap_start=False, cap_end=False)
 
@@ -231,7 +244,7 @@ class Character:
             foot_dir = vm.normalize(vm.sub(toe, ankle))
             geom.tube(mesh,
                       vm.add(ankle, vm.mul(foot_dir, -0.012 * h)), toe,
-                      p.foot_r * h * 0.74 * pad, p.foot_r * h * 0.52 * pad,
+                      p.foot_r * h * 0.78 * pad, p.foot_r * h * 0.52 * pad,
                       f"foot_{side}", segments=SEGMENTS_LIMB, slices=5,
                       round_start=p.foot_r * h * 0.62,
                       round_end=p.foot_r * h * 0.50)
@@ -240,19 +253,20 @@ class Character:
             top = [
                 (y, rx * pad, rz * pad)
                 for (y, rx, rz) in self._resample(self._torso_sections())
-                if p.chest_y - 0.055 <= y <= p.shoulder_y - 0.012
+                if p.chest_y - 0.055 <= y <= p.shoulder_y - 0.020
             ]
             geom.loft(
                 mesh,
                 [{"center": (0.0, y * h, 0.0), "rx": rx * h, "rz": rz * h,
                   "squash": p.torso_squash} for (y, rx, rz) in top],
-                "torso", segments=SEGMENTS_TORSO, cap_start=False, cap_end=False,
+                "torso", segments=SEGMENTS_TORSO, cap_start=False,
+                cap_end=False,
             )
 
     # -- skinning ----------------------------------------------------------
 
     def _skin(self, group):
-        p, rig = self.p, self.rig
+        rig = self.rig
         mesh = group.mesh
         for i in range(mesh.vertex_count):
             part = mesh.parts[i]
@@ -274,12 +288,32 @@ class Character:
             group.weights.append(weights)
 
     def _torso_weights(self, pos):
+        """Blend the spine chain by height.
+
+        Anchors are the joint heights themselves, so a vertex level with a joint
+        is fully owned by it and vertices between two joints share them. Only two
+        influences are ever non-zero, which keeps the deformation predictable.
+        """
         p = self.p
         y = pos[1] / p.height
-        w_hips = 1.0 - vm.smoothstep(p.hip_y - 0.02, p.waist_y, y)
-        w_chest = vm.smoothstep(p.waist_y, p.chest_y + 0.01, y)
-        w_spine = max(0.0, 1.0 - w_hips - w_chest)
-        return [("Hips", w_hips), ("Spine", w_spine), ("Chest", w_chest)]
+        anchors = [
+            ("Hips", p.hip_y),
+            ("Spine", p.waist_y),
+            ("Chest", p.chest_y),
+            ("UpperChest", self._upper_chest_y()),
+        ]
+        if y <= anchors[0][1]:
+            return [(anchors[0][0], 1.0)]
+        if y >= anchors[-1][1]:
+            return [(anchors[-1][0], 1.0)]
+        for (lo_name, lo_y), (hi_name, hi_y) in zip(anchors, anchors[1:]):
+            if lo_y <= y <= hi_y:
+                t = (y - lo_y) / max(hi_y - lo_y, 1e-9)
+                # smoothstep rather than linear: a linear blend creases visibly
+                # at the anchor heights when the spine bends
+                t = t * t * (3.0 - 2.0 * t)
+                return [(lo_name, 1.0 - t), (hi_name, t)]
+        return [(anchors[-1][0], 1.0)]
 
     def _pack_influences(self, pairs):
         """Normalise (bone, weight) pairs into the fixed 4-wide glTF layout.
@@ -306,35 +340,38 @@ class Character:
     def _bake_morphs(self, group, ctx):
         mesh = group.mesh
         h = self.p.height
-        for grp in morphs.GROUPS:
+        for grp in self.morph_groups:
             displacement = grp.amount * h
             deltas = []
-            moved = False
+            touched = 0
             positions = list(mesh.positions)
             for i in range(mesh.vertex_count):
-                m = grp.mask(ctx, mesh.parts[i], mesh.positions[i], mesh.normals[i])
-                if m <= 1e-4:
+                m = grp.mask(ctx, mesh.parts[i], mesh.positions[i],
+                             mesh.normals[i])
+                # masks may be negative: grooves such as the linea alba and the
+                # transverse ab lines pull the surface in
+                if abs(m) <= 1e-4:
                     deltas.append((0.0, 0.0, 0.0))
                     continue
-                moved = True
+                touched += 1
                 d = vm.mul(mesh.normals[i], displacement * m)
                 deltas.append(d)
                 positions[i] = vm.add(mesh.positions[i], d)
 
-            if not moved:
+            if touched == 0:
                 # a group that touches nothing in this mesh still needs a slot:
                 # glTF requires every primitive of a mesh to expose the same
                 # target count in the same order
                 zeros = [(0.0, 0.0, 0.0)] * mesh.vertex_count
                 group.targets.append({"name": grp.name, "positions": zeros,
-                                      "normals": zeros})
+                                      "normals": zeros, "touched": 0})
                 continue
 
             morphed_normals = geom.compute_normals_for(positions, mesh.indices)
             normal_deltas = [vm.sub(morphed_normals[i], mesh.normals[i])
                              for i in range(mesh.vertex_count)]
             group.targets.append({"name": grp.name, "positions": deltas,
-                                  "normals": normal_deltas})
+                                  "normals": normal_deltas, "touched": touched})
 
     # -- reporting ---------------------------------------------------------
 
@@ -343,5 +380,7 @@ class Character:
             "vertices": sum(g.mesh.vertex_count for g in self.groups),
             "triangles": sum(g.mesh.triangle_count for g in self.groups),
             "joints": len(self.rig.bones),
-            "morph_targets": len(morphs.GROUPS),
+            "morphTargets": len(self.morph_groups),
+            "muscleGroups": sum(1 for g in self.morph_groups
+                                if g.kind == "muscle"),
         }

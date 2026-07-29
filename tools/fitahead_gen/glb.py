@@ -96,6 +96,81 @@ class GLBBuilder:
         self.json["accessors"].append(accessor)
         return len(self.json["accessors"]) - 1
 
+    def add_sparse_accessor(self, values, accessor_type, name=None,
+                            epsilon=1e-7):
+        """Store a mostly-zero array as a glTF sparse accessor.
+
+        Morph target deltas are the ideal case: a mask for one muscle touches a
+        small fraction of the mesh, and a dense accessor would store tens of
+        thousands of zero vectors per target. With no base bufferView the
+        implied base is all zeros, which is exactly a delta array's default.
+
+        Falls back to a dense accessor when the data is not sparse enough for
+        the index overhead to pay for itself.
+        """
+        n = _COMPONENT_COUNT[accessor_type]
+        count = len(values)
+        nonzero = [i for i, v in enumerate(values)
+                   if any(abs(c) > epsilon for c in v)]
+
+        # each sparse element costs 4 bytes of index on top of its value, so the
+        # break-even share is componentSize*n / (componentSize*n + 4)
+        value_bytes = _COMPONENT_SIZE[FLOAT] * n
+        if not nonzero or len(nonzero) > count * value_bytes / (value_bytes + 4):
+            # dense fallback still describes vertex data, so it wants a target;
+            # the sparse path below must NOT set one, per the spec
+            return self.add_accessor(values, accessor_type, name=name,
+                                     target=ARRAY_BUFFER)
+
+        flat = []
+        for i in nonzero:
+            flat.extend(values[i])
+        index_view = self._append_bytes(
+            struct.pack(f"<{len(nonzero)}I", *nonzero)
+        )
+        value_view = self._append_bytes(
+            struct.pack(f"<{len(flat)}f", *flat)
+        )
+
+        accessor = {
+            "componentType": FLOAT,
+            "count": count,
+            "type": accessor_type,
+            "sparse": {
+                "count": len(nonzero),
+                "indices": {"bufferView": index_view, "byteOffset": 0,
+                            "componentType": UNSIGNED_INT},
+                "values": {"bufferView": value_view, "byteOffset": 0},
+            },
+        }
+        if name:
+            accessor["name"] = name
+        # min/max describe the full logical array, so the implied zeros count
+        mins = [0.0] * n
+        maxs = [0.0] * n
+        for i in nonzero:
+            for c in range(n):
+                mins[c] = min(mins[c], values[i][c])
+                maxs[c] = max(maxs[c], values[i][c])
+        accessor["min"] = mins
+        accessor["max"] = maxs
+        self.json["accessors"].append(accessor)
+        return len(self.json["accessors"]) - 1
+
+    # -- extensions --------------------------------------------------------
+
+    def declare_extension(self, name, required=False):
+        self.json.setdefault("extensionsUsed", [])
+        if name not in self.json["extensionsUsed"]:
+            self.json["extensionsUsed"].append(name)
+        if required:
+            self.json.setdefault("extensionsRequired", [])
+            if name not in self.json["extensionsRequired"]:
+                self.json["extensionsRequired"].append(name)
+
+    def set_root_extension(self, name, payload):
+        self.json.setdefault("extensions", {})[name] = payload
+
     # -- scene graph -------------------------------------------------------
 
     def add_node(self, name=None, translation=None, rotation=None, scale=None,

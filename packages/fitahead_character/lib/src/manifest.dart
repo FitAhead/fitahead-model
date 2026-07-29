@@ -62,6 +62,10 @@ class CharacterPreset {
     required this.morphTargets,
     required this.focusViews,
     required this.focusFovDeg,
+    required this.archetypes,
+    required this.humanoidBones,
+    required this.absFatOcclusion,
+    required this.fatSplit,
   });
 
   factory CharacterPreset.fromJson(Map<String, dynamic> json) {
@@ -87,6 +91,15 @@ class CharacterPreset {
             .map((e) => FocusView.fromJson(e as Map<String, dynamic>)),
       ),
       focusFovDeg: (json['focusFovDeg'] as num).toDouble(),
+      archetypes: List<BodyArchetype>.unmodifiable(
+        (json['archetypes'] as List)
+            .map((e) => BodyArchetype.fromJson(e as Map<String, dynamic>)),
+      ),
+      humanoidBones: Map<String, String>.unmodifiable(
+        (json['humanoidBones'] as Map<String, dynamic>).cast<String, String>(),
+      ),
+      absFatOcclusion: (json['absFatOcclusion'] as num).toDouble(),
+      fatSplit: FatSplit.fromJson(json['fatSplit'] as Map<String, dynamic>),
     );
   }
 
@@ -105,6 +118,37 @@ class CharacterPreset {
   final List<MorphTargetInfo> morphTargets;
   final List<FocusView> focusViews;
   final double focusFovDeg;
+
+  /// Named starting body types, lean to overweight.
+  final List<BodyArchetype> archetypes;
+
+  /// `EXT_skeleton_humanoid` bone role -> our node name.
+  final Map<String, String> humanoidBones;
+
+  /// How much body fat hides abdominal definition. Visible abs are a
+  /// body-composition fact as much as a training one.
+  final double absFatOcclusion;
+
+  final FatSplit fatSplit;
+
+  BodyArchetype? archetype(String id) {
+    for (final a in archetypes) {
+      if (a.id == id) return a;
+    }
+    return null;
+  }
+
+  /// Morph groups that grow with training.
+  List<MorphTargetInfo> get muscleGroups => [
+        for (final m in morphTargets)
+          if (m.isMuscle) m
+      ];
+
+  /// Morph groups driven by body composition.
+  List<MorphTargetInfo> get fatGroups => [
+        for (final m in morphTargets)
+          if (m.isFat) m
+      ];
 
   /// Morph target names in GLB order — the order `morphTargetInfluences`
   /// expects when a renderer does not expose a name lookup.
@@ -166,6 +210,7 @@ class JointInfo {
     required this.name,
     required this.parent,
     required this.rest,
+    required this.humanoid,
   });
 
   factory JointInfo.fromJson(Map<String, dynamic> json) => JointInfo(
@@ -173,6 +218,7 @@ class JointInfo {
         name: json['name'] as String,
         parent: json['parent'] as String?,
         rest: Vec3.fromList(json['rest'] as List),
+        humanoid: json['humanoid'] as String?,
       );
 
   final int index;
@@ -181,6 +227,68 @@ class JointInfo {
 
   /// Rest-pose position in model space, in metres.
   final Vec3 rest;
+
+  /// `EXT_skeleton_humanoid` bone role, or null for joints outside that set
+  /// (only `Root` today). Lets humanoid animation be remapped by role rather
+  /// than by node index.
+  final String? humanoid;
+}
+
+/// Sex-typical split of body fat between the two deposition patterns.
+class FatSplit {
+  const FatSplit({required this.android, required this.gynoid});
+
+  factory FatSplit.fromJson(Map<String, dynamic> json) => FatSplit(
+        android: (json['android'] as num).toDouble(),
+        gynoid: (json['gynoid'] as num).toDouble(),
+      );
+
+  /// Abdominal ("apple") share — predominates in males.
+  final double android;
+
+  /// Gluteofemoral ("pear") share — predominates in females.
+  final double gynoid;
+}
+
+/// A named starting body type — one point in morph space, not a separate asset.
+class BodyArchetype {
+  const BodyArchetype({
+    required this.id,
+    required this.labelKo,
+    required this.labelEn,
+    required this.muscleLevel,
+    required this.fatLevel,
+    required this.noteKo,
+    required this.weights,
+  });
+
+  factory BodyArchetype.fromJson(Map<String, dynamic> json) => BodyArchetype(
+        id: json['id'] as String,
+        labelKo: json['labelKo'] as String,
+        labelEn: json['labelEn'] as String,
+        muscleLevel: (json['muscleLevel'] as num).toDouble(),
+        fatLevel: (json['fatLevel'] as num).toDouble(),
+        noteKo: json['noteKo'] as String,
+        weights: Map<String, double>.unmodifiable({
+          for (final e in (json['weights'] as Map<String, dynamic>).entries)
+            e.key: (e.value as num).toDouble(),
+        }),
+      );
+
+  final String id;
+  final String labelKo;
+  final String labelEn;
+
+  /// 0..1 training level applied across every muscle group.
+  final double muscleLevel;
+
+  /// 0..1 body fat, split between the two deposition patterns.
+  final double fatLevel;
+
+  final String noteKo;
+
+  /// Ready-to-apply morph weights.
+  final Map<String, double> weights;
 }
 
 /// A blend shape: one muscle group that can grow.
@@ -191,7 +299,9 @@ class MorphTargetInfo {
     required this.labelKo,
     required this.labelEn,
     required this.maxDisplacement,
-    required this.isRegression,
+    required this.kind,
+    required this.muscleKo,
+    required this.muscleEn,
   });
 
   factory MorphTargetInfo.fromJson(Map<String, dynamic> json) =>
@@ -201,7 +311,9 @@ class MorphTargetInfo {
         labelKo: json['labelKo'] as String,
         labelEn: json['labelEn'] as String,
         maxDisplacement: (json['maxDisplacement'] as num).toDouble(),
-        isRegression: json['isRegression'] as bool,
+        kind: json['kind'] as String,
+        muscleKo: json['muscleKo'] as String,
+        muscleEn: json['muscleEn'] as String,
       );
 
   final int index;
@@ -212,9 +324,17 @@ class MorphTargetInfo {
   /// How far the surface moves, in metres, at weight 1.0.
   final double maxDisplacement;
 
-  /// True for shapes that represent losing condition rather than gaining it —
-  /// `belly` is the only one today, and it is driven by body fat, not training.
-  final bool isRegression;
+  /// `muscle` grows with training, `fat` comes from body composition, and
+  /// `composite` is derived from the other groups rather than set directly.
+  final String kind;
+
+  /// Anatomical name of the structure, for a UI that wants to teach as well as
+  /// motivate ("가슴" / "대흉근").
+  final String muscleKo;
+  final String muscleEn;
+
+  bool get isMuscle => kind == 'muscle';
+  bool get isFat => kind == 'fat';
 }
 
 /// A camera framing for the whole body or for one body part.

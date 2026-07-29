@@ -43,9 +43,13 @@ def generate(out_dir, preset_names, face_size):
             character, filename, result["meshes"], FACE_TEXTURE
         )
         stats = character.stats()
+        sparse = result["sparseTargets"]
         print(f"{filename:14s} {result['bytes'] / 1024:8.1f} KB  "
               f"{stats['vertices']:6d} verts  {stats['triangles']:6d} tris  "
-              f"{stats['joints']:2d} joints  {stats['morph_targets']:2d} morphs")
+              f"{stats['joints']:2d} joints  "
+              f"{stats['morphTargets']:2d} morphs "
+              f"({stats['muscleGroups']} muscle)  "
+              f"{sparse['sparse']}/{sparse['targets']} sparse")
 
     doc = {
         "version": 1,

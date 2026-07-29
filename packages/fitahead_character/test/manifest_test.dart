@@ -94,15 +94,21 @@ void main() {
           preset.morphNames,
           containsAll(<String>[
             'bulk',
-            'chest',
-            'back',
-            'shoulders',
-            'arms',
+            'traps',
+            'delts',
+            'pecs',
+            'lats',
+            'biceps',
+            'triceps',
+            'forearms',
             'abs',
+            'obliques',
             'glutes',
-            'thighs',
+            'quads',
+            'hams',
             'calves',
-            'belly',
+            'fat_android',
+            'fat_gynoid',
           ]),
         );
         for (final m in preset.morphTargets) {
@@ -114,11 +120,20 @@ void main() {
       }
     });
 
-    test('belly is the only regression shape', () {
+    test('exactly two fat patterns, and they are the sex-typical pair', () {
       for (final preset in manifest.presets.values) {
-        final regressions =
-            preset.morphTargets.where((m) => m.isRegression).map((m) => m.name);
-        expect(regressions, ['belly']);
+        expect(
+            preset.fatGroups.map((m) => m.name), ['fat_android', 'fat_gynoid']);
+      }
+    });
+
+    test('every muscle group names the anatomy it represents', () {
+      for (final preset in manifest.presets.values) {
+        expect(preset.muscleGroups, hasLength(13));
+        for (final m in preset.muscleGroups) {
+          expect(m.muscleKo, isNotEmpty, reason: m.name);
+          expect(m.muscleEn, isNotEmpty, reason: m.name);
+        }
       }
     });
 
@@ -143,10 +158,7 @@ void main() {
         final ids = {for (final v in preset.focusViews) v.id};
         expect(ids, containsAll(<String>['full_body', 'upper_body', 'face']));
         final trainable = {for (final v in preset.trainableViews) v.morph};
-        final growable = {
-          for (final m in preset.morphTargets)
-            if (!m.isRegression && m.name != GrowthMorphs.bulk) m.name,
-        };
+        final growable = {for (final m in preset.muscleGroups) m.name};
         expect(trainable, growable,
             reason: 'every growable group needs a camera to show it off');
       }

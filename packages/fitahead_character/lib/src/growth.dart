@@ -22,23 +22,27 @@ class PartProgress {
 
 /// Everything the growth model needs to decide how the body looks.
 class TrainingProgress {
-  const TrainingProgress({this.parts = const {}, this.bellyLevel = 0.0});
+  const TrainingProgress({this.parts = const {}, this.fatLevel = 0.0});
 
   /// Keyed by morph target name (`chest`, `arms`, …).
   final Map<String, PartProgress> parts;
 
-  /// 0..1 belly fullness, from body composition rather than training. The app
-  /// decides how to derive it — measured body fat, weight trend, or a manual
-  /// starting choice during onboarding.
-  final double bellyLevel;
+  /// 0..1 body fat, from body composition rather than training. The app decides
+  /// how to derive it — a measurement, a weight trend, or a choice made during
+  /// onboarding. It is split between the two deposition patterns using the
+  /// preset's sex-typical ratio.
+  final double fatLevel;
 
   TrainingProgress withSession(String morph, double volume) => TrainingProgress(
         parts: {
           ...parts,
           morph: (parts[morph] ?? const PartProgress(volume: 0)).plus(volume),
         },
-        bellyLevel: bellyLevel,
+        fatLevel: fatLevel,
       );
+
+  TrainingProgress withFat(double level) =>
+      TrainingProgress(parts: parts, fatLevel: level);
 }
 
 /// Maps cumulative volume onto a 0..1 morph weight.
@@ -126,24 +130,31 @@ class GrowthModel {
   GrowthCurve curveFor(String morph) => curves[morph] ?? defaultCurve;
 
   BodyState stateFor(TrainingProgress progress) {
+    final fat = progress.fatLevel.clamp(0.0, 1.0);
     final weights = <String, double>{};
-    for (final morph in preset.morphTargets) {
-      if (morph.name == GrowthMorphs.bulk) continue;
-      if (morph.name == GrowthMorphs.belly) {
-        weights[morph.name] = progress.bellyLevel.clamp(0.0, 1.0);
-        continue;
-      }
+
+    for (final morph in preset.muscleGroups) {
       final part = progress.parts[morph.name];
       weights[morph.name] =
           part == null ? 0.0 : curveFor(morph.name).weightFor(part);
     }
 
+    // Abs are the one muscle whose APPEARANCE is gated by body composition: a
+    // well developed rectus abdominis is invisible under subcutaneous fat.
+    // Without this the character would show a six-pack on an overweight body.
+    final absWeight = weights[GrowthMorphs.abs];
+    if (absWeight != null) {
+      weights[GrowthMorphs.abs] =
+          absWeight * (1.0 - fat * preset.absFatOcclusion);
+    }
+
+    // Fat is one number from the app's point of view, deposited in the
+    // sex-typical ratio between the two patterns.
+    weights[GrowthMorphs.fatAndroid] = fat * preset.fatSplit.android;
+    weights[GrowthMorphs.fatGynoid] = fat * preset.fatSplit.gynoid;
+
     if (preset.morph(GrowthMorphs.bulk) != null) {
-      final trained = [
-        for (final m in preset.morphTargets)
-          if (!m.isRegression && m.name != GrowthMorphs.bulk)
-            weights[m.name] ?? 0.0,
-      ];
+      final trained = [for (final m in preset.muscleGroups) weights[m.name]!];
       final mean = trained.isEmpty
           ? 0.0
           : trained.reduce((a, b) => a + b) / trained.length;
@@ -151,6 +162,13 @@ class GrowthModel {
     }
     return BodyState(weights);
   }
+
+  /// Training volume that would place a group at an archetype's muscle level —
+  /// useful for seeding a user who tells the app they already train.
+  double volumeForArchetype(String morph, BodyArchetype archetype) =>
+      curveFor(morph).volumeForWeight(
+        archetype.muscleLevel.clamp(0.0, curveFor(morph).maxWeight),
+      );
 
   /// 0-based stage of a group, in `[0, stageCount - 1]`.
   int stageOf(String morph, double weight) {

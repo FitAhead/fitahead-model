@@ -1,12 +1,15 @@
 """Skeleton definition.
 
-Joint layout follows the Khronos RiggedFigure sample's topology (torso chain,
-mirrored arm and leg chains) but adds a head joint and splits the torso into
-hips / spine / chest so the waist can bend and so morph masks have clean height
-bands to key off.
+Joint positions come from `anthro.HEIGHTS`, so the skeleton is anthropometric.
+It is also FIXED across every body type: biacromial breadth, limb lengths and
+joint centres are bone, and training does not move them. Everything that
+distinguishes 마른 / 평범 / 근육질 is soft tissue, which is why they share one rig
+and differ only in morph weights.
 
-The rest pose is translation-only, which makes the inverse bind matrix of every
-joint just a negated translation.
+Node names are our own readable ones. Interoperability comes from the
+`HUMANOID_BONES` map below, which is emitted both into the runtime manifest and
+into the `EXT_skeleton_humanoid` glTF extension — that extension exists exactly
+so a rig does not have to rename its nodes to be understood.
 """
 
 from . import vecmath as vm
@@ -67,27 +70,33 @@ def build_rig(p):
         return fraction * h
 
     hip_half = p.hip_rx * h * p.leg_stance
-    sw = p.shoulder_half_w * h
+    sw = p.shoulder_half_w * h  # biacromial / 2 — where the arm hangs
+
+    # The thoracic spine is split into Chest and UpperChest. Two segments let
+    # the upper back round independently of the lower, which is what a shrug or
+    # a row looks like, and it matches the humanoid bone set.
+    upper_chest_y = p.chest_y + (p.shoulder_y - p.chest_y) * 0.62
 
     bones = [
         Bone("Root", None, (0.0, 0.0, 0.0)),
         Bone("Hips", "Root", (0.0, y(p.hip_y), 0.0)),
         Bone("Spine", "Hips", (0.0, y(p.waist_y), 0.0)),
         Bone("Chest", "Spine", (0.0, y(p.chest_y), 0.0)),
-        Bone("Neck", "Chest", (0.0, y(p.neck_y), 0.0)),
-        Bone("Head", "Neck", (0.0, y(p.neck_y) + p.head_r * h * 0.95, 0.0)),
+        Bone("UpperChest", "Chest", (0.0, y(upper_chest_y), 0.0)),
+        Bone("Neck", "UpperChest", (0.0, y(p.neck_y), 0.0)),
+        Bone("Head", "Neck", (0.0, y(p.head_center_y), 0.0)),
     ]
 
     for side, sx in (("L", 1.0), ("R", -1.0)):
         bones += [
-            Bone(f"Shoulder_{side}", "Chest",
-                 (sx * sw * 0.36, y(p.shoulder_y), 0.0)),
+            Bone(f"Shoulder_{side}", "UpperChest",
+                 (sx * sw * 0.34, y(p.shoulder_y), 0.0)),
             Bone(f"UpperArm_{side}", f"Shoulder_{side}",
-                 (sx * sw, y(p.shoulder_y) - p.upperarm_r * h * 0.4, 0.0)),
+                 (sx * sw, y(p.shoulder_y) - p.upperarm_r * h * 0.5, 0.0)),
             Bone(f"Forearm_{side}", f"UpperArm_{side}",
-                 (sx * sw * 1.07, y(p.elbow_y), 0.0)),
+                 (sx * sw * 1.05, y(p.elbow_y), 0.0)),
             Bone(f"Hand_{side}", f"Forearm_{side}",
-                 (sx * sw * 1.12, y(p.wrist_y), 0.0)),
+                 (sx * sw * 1.09, y(p.wrist_y), 0.0)),
         ]
 
     for side, sx in (("L", 1.0), ("R", -1.0)):
@@ -98,25 +107,57 @@ def build_rig(p):
             Bone(f"Foot_{side}", f"Shin_{side}",
                  (sx * hip_half * 0.90, y(p.ankle_y), 0.0)),
             Bone(f"Toe_{side}", f"Foot_{side}",
-                 (sx * hip_half * 0.90, y(0.012), p.foot_len * h * 0.62)),
+                 (sx * hip_half * 0.90, y(0.012), p.foot_len * h * 0.60)),
         ]
 
     return Rig(bones)
 
 
+#: Our node name -> EXT_skeleton_humanoid bone name.
+#:
+#: Draft extension (takahirox/EXT_skeleton_humanoid), derived from the VRM
+#: humanoid bone set. Emitting it is purely additive metadata: it lets humanoid
+#: animation authored against any other rig be remapped onto this one by bone
+#: role instead of by node index. Every bone in the set is optional, so the
+#: finger and eye bones we do not have are simply absent.
+HUMANOID_BONES = {
+    "Hips": "hips",
+    "Spine": "spine",
+    "Chest": "chest",
+    "UpperChest": "upperChest",
+    "Neck": "neck",
+    "Head": "head",
+    "Shoulder_L": "leftShoulder",
+    "UpperArm_L": "leftUpperArm",
+    "Forearm_L": "leftLowerArm",
+    "Hand_L": "leftHand",
+    "Shoulder_R": "rightShoulder",
+    "UpperArm_R": "rightUpperArm",
+    "Forearm_R": "rightLowerArm",
+    "Hand_R": "rightHand",
+    "Thigh_L": "leftUpperLeg",
+    "Shin_L": "leftLowerLeg",
+    "Foot_L": "leftFoot",
+    "Toe_L": "leftToes",
+    "Thigh_R": "rightUpperLeg",
+    "Shin_R": "rightLowerLeg",
+    "Foot_R": "rightFoot",
+    "Toe_R": "rightToes",
+}
+
+EXT_HUMANOID = "EXT_skeleton_humanoid"
+
+
 #: Which joint drives each mesh part, and which joint it blends into near the
 #: start of the segment. Keeps skin weights predictable without a heat solve.
 PART_BONES = {
-    "torso": ("Spine", "Hips"),
-    "chest_shell": ("Chest", "Spine"),
-    "neck": ("Neck", "Chest"),
+    "neck": ("Neck", "UpperChest"),
     "head": ("Head", "Neck"),
     "face": ("Head", "Head"),
-    "hips": ("Hips", "Hips"),
 }
 
 for _side in ("L", "R"):
-    PART_BONES[f"shoulder_{_side}"] = (f"Shoulder_{_side}", "Chest")
+    PART_BONES[f"shoulder_{_side}"] = (f"Shoulder_{_side}", "UpperChest")
     PART_BONES[f"upperarm_{_side}"] = (f"UpperArm_{_side}", f"Shoulder_{_side}")
     PART_BONES[f"forearm_{_side}"] = (f"Forearm_{_side}", f"UpperArm_{_side}")
     PART_BONES[f"hand_{_side}"] = (f"Hand_{_side}", f"Forearm_{_side}")

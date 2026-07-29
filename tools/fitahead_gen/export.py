@@ -1,9 +1,10 @@
 """Turns a Character into a GLB file."""
 
-from . import glb, morphs
+from . import glb
+from .rig import EXT_HUMANOID, HUMANOID_BONES
 
 
-def export_glb(character, path, face_png):
+def export_glb(character, path, face_png, humanoid_extension=True):
     b = glb.GLBBuilder()
     rig = character.rig
 
@@ -36,6 +37,7 @@ def export_glb(character, path, face_png):
     # -- meshes ------------------------------------------------------------
     mesh_names = []
     mesh_nodes = []
+    sparse_stats = {"targets": 0, "sparse": 0}
     for group in character.groups:
         mesh = group.mesh
         if mesh.vertex_count == 0:
@@ -65,16 +67,22 @@ def export_glb(character, path, face_png):
         }
         target_names = None
         if group.targets:
+            # sparse: a mask for one muscle touches a small share of the mesh,
+            # so storing dense deltas per target would dominate the file
             primitive["targets"] = [
                 {
-                    "POSITION": b.add_accessor(t["positions"], "VEC3",
-                                               target=glb.ARRAY_BUFFER),
-                    "NORMAL": b.add_accessor(t["normals"], "VEC3",
-                                             target=glb.ARRAY_BUFFER),
+                    "POSITION": b.add_sparse_accessor(
+                        t["positions"], "VEC3", name=f'{t["name"]}.position'),
+                    "NORMAL": b.add_sparse_accessor(
+                        t["normals"], "VEC3", name=f'{t["name"]}.normal'),
                 }
                 for t in group.targets
             ]
             target_names = [t["name"] for t in group.targets]
+            for t in group.targets:
+                sparse_stats["targets"] += 1
+                if t["touched"] < mesh.vertex_count * 0.6:
+                    sparse_stats["sparse"] += 1
 
         mesh_index = b.add_mesh(
             mesh.name, [primitive],
@@ -88,6 +96,27 @@ def export_glb(character, path, face_png):
     for node in mesh_nodes:
         b.add_root(node)
 
+    # -- humanoid bone mapping --------------------------------------------
+    if humanoid_extension:
+        # Additive metadata only, and NOT declared as required: a runtime that
+        # ignores it still loads a correct character. What it buys is humanoid
+        # animation remapping by bone role instead of by node index.
+        b.declare_extension(EXT_HUMANOID, required=False)
+        b.set_root_extension(EXT_HUMANOID, {
+            "humanoidSkeletons": [{
+                "rootNode": rig.by_name["Root"].index,
+                "humanoidBones": {
+                    humanoid: rig.by_name[node].index
+                    for node, humanoid in HUMANOID_BONES.items()
+                    if node in rig.by_name
+                },
+            }],
+        })
+
     size = b.save_glb(path)
-    return {"bytes": size, "meshes": mesh_names,
-            "morphTargets": [g.name for g in morphs.GROUPS]}
+    return {
+        "bytes": size,
+        "meshes": mesh_names,
+        "morphTargets": [g.name for g in character.morph_groups],
+        "sparseTargets": sparse_stats,
+    }
