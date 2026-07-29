@@ -1,0 +1,14 @@
+name: fitahead_character
+description: >-
+  Domain model for the FitAhead 3D character: manifest parsing, body-part focus
+  framing, and the training-progress to muscle-growth mapping. Rendering-engine
+  agnostic — no Flutter or 3D dependency.
+version: 0.1.0
+publish_to: none
+
+environment:
+  sdk: ^3.5.0
+
+dev_dependencies:
+  lints: ^5.0.0
+  test: ^1.25.0

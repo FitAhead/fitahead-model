@@ -1,0 +1,15 @@
+# Dart / Flutter
+.dart_tool/
+.packages
+build/
+pubspec.lock
+*.iml
+
+# Python
+__pycache__/
+*.py[cod]
+
+# Editors / OS
+.idea/
+.vscode/
+.DS_Store

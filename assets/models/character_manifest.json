@@ -1,0 +1,1057 @@
+{
+  "version": 1,
+  "generator": "tools/gen_character.py",
+  "faceTexture": "face_default.png",
+  "presets": {
+    "female": {
+      "id": "female",
+      "sex": "female",
+      "file": "female.glb",
+      "height": 1.62,
+      "upAxis": "Y",
+      "frontAxis": "+Z",
+      "meshes": [
+        "Body",
+        "Face",
+        "Outfit"
+      ],
+      "face": {
+        "mesh": "Face",
+        "material": "Face",
+        "uvLayout": "disc-inscribed-in-square",
+        "defaultTexture": "face_default.png",
+        "note": "Replace this texture with the user's own drawing; the plate's UVs fill the full 0..1 square."
+      },
+      "joints": [
+        {
+          "index": 0,
+          "name": "Root",
+          "parent": null,
+          "rest": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "index": 1,
+          "name": "Hips",
+          "parent": "Root",
+          "rest": [
+            0.0,
+            0.8829,
+            0.0
+          ]
+        },
+        {
+          "index": 2,
+          "name": "Spine",
+          "parent": "Hips",
+          "rest": [
+            0.0,
+            1.04976,
+            0.0
+          ]
+        },
+        {
+          "index": 3,
+          "name": "Chest",
+          "parent": "Spine",
+          "rest": [
+            0.0,
+            1.21824,
+            0.0
+          ]
+        },
+        {
+          "index": 4,
+          "name": "Neck",
+          "parent": "Chest",
+          "rest": [
+            0.0,
+            1.3689,
+            0.0
+          ]
+        },
+        {
+          "index": 5,
+          "name": "Head",
+          "parent": "Neck",
+          "rest": [
+            0.0,
+            1.50125,
+            0.0
+          ]
+        },
+        {
+          "index": 6,
+          "name": "Shoulder_L",
+          "parent": "Chest",
+          "rest": [
+            0.0589,
+            1.31544,
+            0.0
+          ]
+        },
+        {
+          "index": 7,
+          "name": "UpperArm_L",
+          "parent": "Shoulder_L",
+          "rest": [
+            0.16362,
+            1.29535,
+            0.0
+          ]
+        },
+        {
+          "index": 8,
+          "name": "Forearm_L",
+          "parent": "UpperArm_L",
+          "rest": [
+            0.17507,
+            1.00764,
+            0.0
+          ]
+        },
+        {
+          "index": 9,
+          "name": "Hand_L",
+          "parent": "Forearm_L",
+          "rest": [
+            0.18325,
+            0.73224,
+            0.0
+          ]
+        },
+        {
+          "index": 10,
+          "name": "Shoulder_R",
+          "parent": "Chest",
+          "rest": [
+            -0.0589,
+            1.31544,
+            0.0
+          ]
+        },
+        {
+          "index": 11,
+          "name": "UpperArm_R",
+          "parent": "Shoulder_R",
+          "rest": [
+            -0.16362,
+            1.29535,
+            0.0
+          ]
+        },
+        {
+          "index": 12,
+          "name": "Forearm_R",
+          "parent": "UpperArm_R",
+          "rest": [
+            -0.17507,
+            1.00764,
+            0.0
+          ]
+        },
+        {
+          "index": 13,
+          "name": "Hand_R",
+          "parent": "Forearm_R",
+          "rest": [
+            -0.18325,
+            0.73224,
+            0.0
+          ]
+        },
+        {
+          "index": 14,
+          "name": "Thigh_L",
+          "parent": "Hips",
+          "rest": [
+            0.08748,
+            0.7776,
+            0.0
+          ]
+        },
+        {
+          "index": 15,
+          "name": "Shin_L",
+          "parent": "Thigh_L",
+          "rest": [
+            0.08223,
+            0.45036,
+            0.0
+          ]
+        },
+        {
+          "index": 16,
+          "name": "Foot_L",
+          "parent": "Shin_L",
+          "rest": [
+            0.07873,
+            0.0729,
+            0.0
+          ]
+        },
+        {
+          "index": 17,
+          "name": "Toe_L",
+          "parent": "Foot_L",
+          "rest": [
+            0.07873,
+            0.01944,
+            0.10848
+          ]
+        },
+        {
+          "index": 18,
+          "name": "Thigh_R",
+          "parent": "Hips",
+          "rest": [
+            -0.08748,
+            0.7776,
+            0.0
+          ]
+        },
+        {
+          "index": 19,
+          "name": "Shin_R",
+          "parent": "Thigh_R",
+          "rest": [
+            -0.08223,
+            0.45036,
+            0.0
+          ]
+        },
+        {
+          "index": 20,
+          "name": "Foot_R",
+          "parent": "Shin_R",
+          "rest": [
+            -0.07873,
+            0.0729,
+            0.0
+          ]
+        },
+        {
+          "index": 21,
+          "name": "Toe_R",
+          "parent": "Foot_R",
+          "rest": [
+            -0.07873,
+            0.01944,
+            0.10848
+          ]
+        }
+      ],
+      "morphTargets": [
+        {
+          "index": 0,
+          "name": "bulk",
+          "labelKo": "전체 체격",
+          "labelEn": "Overall size",
+          "maxDisplacement": 0.02025,
+          "isRegression": false
+        },
+        {
+          "index": 1,
+          "name": "chest",
+          "labelKo": "가슴",
+          "labelEn": "Chest",
+          "maxDisplacement": 0.03969,
+          "isRegression": false
+        },
+        {
+          "index": 2,
+          "name": "back",
+          "labelKo": "등",
+          "labelEn": "Back",
+          "maxDisplacement": 0.03645,
+          "isRegression": false
+        },
+        {
+          "index": 3,
+          "name": "shoulders",
+          "labelKo": "어깨",
+          "labelEn": "Shoulders",
+          "maxDisplacement": 0.03321,
+          "isRegression": false
+        },
+        {
+          "index": 4,
+          "name": "arms",
+          "labelKo": "팔",
+          "labelEn": "Arms",
+          "maxDisplacement": 0.02997,
+          "isRegression": false
+        },
+        {
+          "index": 5,
+          "name": "abs",
+          "labelKo": "복근",
+          "labelEn": "Abs",
+          "maxDisplacement": 0.01782,
+          "isRegression": false
+        },
+        {
+          "index": 6,
+          "name": "glutes",
+          "labelKo": "엉덩이",
+          "labelEn": "Glutes",
+          "maxDisplacement": 0.0324,
+          "isRegression": false
+        },
+        {
+          "index": 7,
+          "name": "thighs",
+          "labelKo": "허벅지",
+          "labelEn": "Thighs",
+          "maxDisplacement": 0.02997,
+          "isRegression": false
+        },
+        {
+          "index": 8,
+          "name": "calves",
+          "labelKo": "종아리",
+          "labelEn": "Calves",
+          "maxDisplacement": 0.02673,
+          "isRegression": false
+        },
+        {
+          "index": 9,
+          "name": "belly",
+          "labelKo": "뱃살",
+          "labelEn": "Belly",
+          "maxDisplacement": 0.06966,
+          "isRegression": true
+        }
+      ],
+      "focusViews": [
+        {
+          "id": "full_body",
+          "labelKo": "전신",
+          "labelEn": "Full body",
+          "target": [
+            0.0,
+            0.81,
+            0.0
+          ],
+          "yawDeg": 0.0,
+          "pitchDeg": 0.0,
+          "distance": 3.29128,
+          "framingRadius": 0.9072,
+          "growthHeadroom": false,
+          "morph": null
+        },
+        {
+          "id": "upper_body",
+          "labelKo": "상체",
+          "labelEn": "Upper body",
+          "target": [
+            0.0,
+            1.134,
+            0.0
+          ],
+          "yawDeg": 0.0,
+          "pitchDeg": 0.0,
+          "distance": 1.70441,
+          "framingRadius": 0.4698,
+          "growthHeadroom": false,
+          "morph": null
+        },
+        {
+          "id": "lower_body",
+          "labelKo": "하체",
+          "labelEn": "Lower body",
+          "target": [
+            0.0,
+            0.486,
+            0.0
+          ],
+          "yawDeg": 0.0,
+          "pitchDeg": 0.0,
+          "distance": 1.76319,
+          "framingRadius": 0.486,
+          "growthHeadroom": false,
+          "morph": null
+        },
+        {
+          "id": "face",
+          "labelKo": "얼굴",
+          "labelEn": "Face",
+          "target": [
+            0.0,
+            1.50125,
+            0.0
+          ],
+          "yawDeg": 0.0,
+          "pitchDeg": 0.0,
+          "distance": 0.88159,
+          "framingRadius": 0.243,
+          "growthHeadroom": false,
+          "morph": null
+        },
+        {
+          "id": "chest",
+          "labelKo": "가슴",
+          "labelEn": "Chest",
+          "target": [
+            0.0,
+            1.21824,
+            0.0243
+          ],
+          "yawDeg": 0.0,
+          "pitchDeg": 0.0,
+          "distance": 1.60391,
+          "framingRadius": 0.4421,
+          "growthHeadroom": true,
+          "morph": "chest"
+        },
+        {
+          "id": "back",
+          "labelKo": "등",
+          "labelEn": "Back",
+          "target": [
+            0.0,
+            1.134,
+            -0.0243
+          ],
+          "yawDeg": 180.0,
+          "pitchDeg": 0.0,
+          "distance": 1.78963,
+          "framingRadius": 0.49329,
+          "growthHeadroom": true,
+          "morph": "back"
+        },
+        {
+          "id": "shoulders",
+          "labelKo": "어깨",
+          "labelEn": "Shoulders",
+          "target": [
+            0.0,
+            1.31544,
+            0.0
+          ],
+          "yawDeg": 26.0,
+          "pitchDeg": 9.0,
+          "distance": 1.71088,
+          "framingRadius": 0.47158,
+          "growthHeadroom": true,
+          "morph": "shoulders"
+        },
+        {
+          "id": "arms",
+          "labelKo": "팔",
+          "labelEn": "Arms",
+          "target": [
+            0.16689,
+            1.16154,
+            0.0
+          ],
+          "yawDeg": 42.0,
+          "pitchDeg": 0.0,
+          "distance": 1.39703,
+          "framingRadius": 0.38507,
+          "growthHeadroom": true,
+          "morph": "arms"
+        },
+        {
+          "id": "abs",
+          "labelKo": "복근",
+          "labelEn": "Abs",
+          "target": [
+            0.0,
+            1.0692,
+            0.0243
+          ],
+          "yawDeg": 0.0,
+          "pitchDeg": 0.0,
+          "distance": 1.41026,
+          "framingRadius": 0.38872,
+          "growthHeadroom": true,
+          "morph": "abs"
+        },
+        {
+          "id": "glutes",
+          "labelKo": "엉덩이",
+          "labelEn": "Glutes",
+          "target": [
+            0.0,
+            0.8829,
+            -0.0243
+          ],
+          "yawDeg": 172.0,
+          "pitchDeg": -6.0,
+          "distance": 1.55895,
+          "framingRadius": 0.42971,
+          "growthHeadroom": true,
+          "morph": "glutes"
+        },
+        {
+          "id": "thighs",
+          "labelKo": "허벅지",
+          "labelEn": "Thighs",
+          "target": [
+            0.08748,
+            0.61398,
+            0.0
+          ],
+          "yawDeg": 22.0,
+          "pitchDeg": 0.0,
+          "distance": 1.63212,
+          "framingRadius": 0.44987,
+          "growthHeadroom": true,
+          "morph": "thighs"
+        },
+        {
+          "id": "calves",
+          "labelKo": "종아리",
+          "labelEn": "Calves",
+          "target": [
+            0.08748,
+            0.26163,
+            0.0
+          ],
+          "yawDeg": 22.0,
+          "pitchDeg": 0.0,
+          "distance": 1.37705,
+          "framingRadius": 0.37957,
+          "growthHeadroom": true,
+          "morph": "calves"
+        }
+      ],
+      "focusFovDeg": 32.0,
+      "stats": {
+        "vertices": 6290,
+        "triangles": 11500,
+        "joints": 22,
+        "morph_targets": 10
+      }
+    },
+    "male": {
+      "id": "male",
+      "sex": "male",
+      "file": "male.glb",
+      "height": 1.75,
+      "upAxis": "Y",
+      "frontAxis": "+Z",
+      "meshes": [
+        "Body",
+        "Face",
+        "Outfit"
+      ],
+      "face": {
+        "mesh": "Face",
+        "material": "Face",
+        "uvLayout": "disc-inscribed-in-square",
+        "defaultTexture": "face_default.png",
+        "note": "Replace this texture with the user's own drawing; the plate's UVs fill the full 0..1 square."
+      },
+      "joints": [
+        {
+          "index": 0,
+          "name": "Root",
+          "parent": null,
+          "rest": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "index": 1,
+          "name": "Hips",
+          "parent": "Root",
+          "rest": [
+            0.0,
+            0.95375,
+            0.0
+          ]
+        },
+        {
+          "index": 2,
+          "name": "Spine",
+          "parent": "Hips",
+          "rest": [
+            0.0,
+            1.12,
+            0.0
+          ]
+        },
+        {
+          "index": 3,
+          "name": "Chest",
+          "parent": "Spine",
+          "rest": [
+            0.0,
+            1.316,
+            0.0
+          ]
+        },
+        {
+          "index": 4,
+          "name": "Neck",
+          "parent": "Chest",
+          "rest": [
+            0.0,
+            1.47875,
+            0.0
+          ]
+        },
+        {
+          "index": 5,
+          "name": "Head",
+          "parent": "Neck",
+          "rest": [
+            0.0,
+            1.6184,
+            0.0
+          ]
+        },
+        {
+          "index": 6,
+          "name": "Shoulder_L",
+          "parent": "Chest",
+          "rest": [
+            0.0756,
+            1.421,
+            0.0
+          ]
+        },
+        {
+          "index": 7,
+          "name": "UpperArm_L",
+          "parent": "Shoulder_L",
+          "rest": [
+            0.21,
+            1.3951,
+            0.0
+          ]
+        },
+        {
+          "index": 8,
+          "name": "Forearm_L",
+          "parent": "UpperArm_L",
+          "rest": [
+            0.2247,
+            1.0885,
+            0.0
+          ]
+        },
+        {
+          "index": 9,
+          "name": "Hand_L",
+          "parent": "Forearm_L",
+          "rest": [
+            0.2352,
+            0.791,
+            0.0
+          ]
+        },
+        {
+          "index": 10,
+          "name": "Shoulder_R",
+          "parent": "Chest",
+          "rest": [
+            -0.0756,
+            1.421,
+            0.0
+          ]
+        },
+        {
+          "index": 11,
+          "name": "UpperArm_R",
+          "parent": "Shoulder_R",
+          "rest": [
+            -0.21,
+            1.3951,
+            0.0
+          ]
+        },
+        {
+          "index": 12,
+          "name": "Forearm_R",
+          "parent": "UpperArm_R",
+          "rest": [
+            -0.2247,
+            1.0885,
+            0.0
+          ]
+        },
+        {
+          "index": 13,
+          "name": "Hand_R",
+          "parent": "Forearm_R",
+          "rest": [
+            -0.2352,
+            0.791,
+            0.0
+          ]
+        },
+        {
+          "index": 14,
+          "name": "Thigh_L",
+          "parent": "Hips",
+          "rest": [
+            0.09604,
+            0.84,
+            0.0
+          ]
+        },
+        {
+          "index": 15,
+          "name": "Shin_L",
+          "parent": "Thigh_L",
+          "rest": [
+            0.09028,
+            0.4865,
+            0.0
+          ]
+        },
+        {
+          "index": 16,
+          "name": "Foot_L",
+          "parent": "Shin_L",
+          "rest": [
+            0.08644,
+            0.07875,
+            0.0
+          ]
+        },
+        {
+          "index": 17,
+          "name": "Toe_L",
+          "parent": "Foot_L",
+          "rest": [
+            0.08644,
+            0.021,
+            0.11718
+          ]
+        },
+        {
+          "index": 18,
+          "name": "Thigh_R",
+          "parent": "Hips",
+          "rest": [
+            -0.09604,
+            0.84,
+            0.0
+          ]
+        },
+        {
+          "index": 19,
+          "name": "Shin_R",
+          "parent": "Thigh_R",
+          "rest": [
+            -0.09028,
+            0.4865,
+            0.0
+          ]
+        },
+        {
+          "index": 20,
+          "name": "Foot_R",
+          "parent": "Shin_R",
+          "rest": [
+            -0.08644,
+            0.07875,
+            0.0
+          ]
+        },
+        {
+          "index": 21,
+          "name": "Toe_R",
+          "parent": "Foot_R",
+          "rest": [
+            -0.08644,
+            0.021,
+            0.11718
+          ]
+        }
+      ],
+      "morphTargets": [
+        {
+          "index": 0,
+          "name": "bulk",
+          "labelKo": "전체 체격",
+          "labelEn": "Overall size",
+          "maxDisplacement": 0.02188,
+          "isRegression": false
+        },
+        {
+          "index": 1,
+          "name": "chest",
+          "labelKo": "가슴",
+          "labelEn": "Chest",
+          "maxDisplacement": 0.04288,
+          "isRegression": false
+        },
+        {
+          "index": 2,
+          "name": "back",
+          "labelKo": "등",
+          "labelEn": "Back",
+          "maxDisplacement": 0.03938,
+          "isRegression": false
+        },
+        {
+          "index": 3,
+          "name": "shoulders",
+          "labelKo": "어깨",
+          "labelEn": "Shoulders",
+          "maxDisplacement": 0.03588,
+          "isRegression": false
+        },
+        {
+          "index": 4,
+          "name": "arms",
+          "labelKo": "팔",
+          "labelEn": "Arms",
+          "maxDisplacement": 0.03238,
+          "isRegression": false
+        },
+        {
+          "index": 5,
+          "name": "abs",
+          "labelKo": "복근",
+          "labelEn": "Abs",
+          "maxDisplacement": 0.01925,
+          "isRegression": false
+        },
+        {
+          "index": 6,
+          "name": "glutes",
+          "labelKo": "엉덩이",
+          "labelEn": "Glutes",
+          "maxDisplacement": 0.035,
+          "isRegression": false
+        },
+        {
+          "index": 7,
+          "name": "thighs",
+          "labelKo": "허벅지",
+          "labelEn": "Thighs",
+          "maxDisplacement": 0.03238,
+          "isRegression": false
+        },
+        {
+          "index": 8,
+          "name": "calves",
+          "labelKo": "종아리",
+          "labelEn": "Calves",
+          "maxDisplacement": 0.02888,
+          "isRegression": false
+        },
+        {
+          "index": 9,
+          "name": "belly",
+          "labelKo": "뱃살",
+          "labelEn": "Belly",
+          "maxDisplacement": 0.07525,
+          "isRegression": true
+        }
+      ],
+      "focusViews": [
+        {
+          "id": "full_body",
+          "labelKo": "전신",
+          "labelEn": "Full body",
+          "target": [
+            0.0,
+            0.875,
+            0.0
+          ],
+          "yawDeg": 0.0,
+          "pitchDeg": 0.0,
+          "distance": 3.5554,
+          "framingRadius": 0.98,
+          "growthHeadroom": false,
+          "morph": null
+        },
+        {
+          "id": "upper_body",
+          "labelKo": "상체",
+          "labelEn": "Upper body",
+          "target": [
+            0.0,
+            1.225,
+            0.0
+          ],
+          "yawDeg": 0.0,
+          "pitchDeg": 0.0,
+          "distance": 1.84119,
+          "framingRadius": 0.5075,
+          "growthHeadroom": false,
+          "morph": null
+        },
+        {
+          "id": "lower_body",
+          "labelKo": "하체",
+          "labelEn": "Lower body",
+          "target": [
+            0.0,
+            0.525,
+            0.0
+          ],
+          "yawDeg": 0.0,
+          "pitchDeg": 0.0,
+          "distance": 1.90468,
+          "framingRadius": 0.525,
+          "growthHeadroom": false,
+          "morph": null
+        },
+        {
+          "id": "face",
+          "labelKo": "얼굴",
+          "labelEn": "Face",
+          "target": [
+            0.0,
+            1.6184,
+            0.0
+          ],
+          "yawDeg": 0.0,
+          "pitchDeg": 0.0,
+          "distance": 0.95234,
+          "framingRadius": 0.2625,
+          "growthHeadroom": false,
+          "morph": null
+        },
+        {
+          "id": "chest",
+          "labelKo": "가슴",
+          "labelEn": "Chest",
+          "target": [
+            0.0,
+            1.316,
+            0.02625
+          ],
+          "yawDeg": 0.0,
+          "pitchDeg": 0.0,
+          "distance": 1.73262,
+          "framingRadius": 0.47757,
+          "growthHeadroom": true,
+          "morph": "chest"
+        },
+        {
+          "id": "back",
+          "labelKo": "등",
+          "labelEn": "Back",
+          "target": [
+            0.0,
+            1.218,
+            -0.02625
+          ],
+          "yawDeg": 180.0,
+          "pitchDeg": 0.0,
+          "distance": 1.93325,
+          "framingRadius": 0.53287,
+          "growthHeadroom": true,
+          "morph": "back"
+        },
+        {
+          "id": "shoulders",
+          "labelKo": "어깨",
+          "labelEn": "Shoulders",
+          "target": [
+            0.0,
+            1.421,
+            0.0
+          ],
+          "yawDeg": 26.0,
+          "pitchDeg": 9.0,
+          "distance": 1.84817,
+          "framingRadius": 0.50943,
+          "growthHeadroom": true,
+          "morph": "shoulders"
+        },
+        {
+          "id": "arms",
+          "labelKo": "팔",
+          "labelEn": "Arms",
+          "target": [
+            0.2142,
+            1.25475,
+            0.0
+          ],
+          "yawDeg": 42.0,
+          "pitchDeg": 0.0,
+          "distance": 1.50914,
+          "framingRadius": 0.41597,
+          "growthHeadroom": true,
+          "morph": "arms"
+        },
+        {
+          "id": "abs",
+          "labelKo": "복근",
+          "labelEn": "Abs",
+          "target": [
+            0.0,
+            1.141,
+            0.02625
+          ],
+          "yawDeg": 0.0,
+          "pitchDeg": 0.0,
+          "distance": 1.52342,
+          "framingRadius": 0.41991,
+          "growthHeadroom": true,
+          "morph": "abs"
+        },
+        {
+          "id": "glutes",
+          "labelKo": "엉덩이",
+          "labelEn": "Glutes",
+          "target": [
+            0.0,
+            0.95375,
+            -0.02625
+          ],
+          "yawDeg": 172.0,
+          "pitchDeg": -6.0,
+          "distance": 1.68405,
+          "framingRadius": 0.46419,
+          "growthHeadroom": true,
+          "morph": "glutes"
+        },
+        {
+          "id": "thighs",
+          "labelKo": "허벅지",
+          "labelEn": "Thighs",
+          "target": [
+            0.09604,
+            0.66325,
+            0.0
+          ],
+          "yawDeg": 22.0,
+          "pitchDeg": 0.0,
+          "distance": 1.7631,
+          "framingRadius": 0.48597,
+          "growthHeadroom": true,
+          "morph": "thighs"
+        },
+        {
+          "id": "calves",
+          "labelKo": "종아리",
+          "labelEn": "Calves",
+          "target": [
+            0.09604,
+            0.28263,
+            0.0
+          ],
+          "yawDeg": 22.0,
+          "pitchDeg": 0.0,
+          "distance": 1.48755,
+          "framingRadius": 0.41002,
+          "growthHeadroom": true,
+          "morph": "calves"
+        }
+      ],
+      "focusFovDeg": 32.0,
+      "stats": {
+        "vertices": 6066,
+        "triangles": 11108,
+        "joints": 22,
+        "morph_targets": 10
+      }
+    }
+  }
+}
