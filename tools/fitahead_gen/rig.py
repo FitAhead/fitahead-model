@@ -12,7 +12,9 @@ into the `EXT_skeleton_humanoid` glTF extension — that extension exists exactl
 so a rig does not have to rename its nodes to be understood.
 """
 
-from . import vecmath as vm
+import math
+
+from . import anthro, vecmath as vm
 
 
 class Bone:
@@ -87,27 +89,47 @@ def build_rig(p):
         Bone("Head", "Neck", (0.0, y(p.head_center_y), 0.0)),
     ]
 
+    # A-pose. The arm is placed by ANGLE and SEGMENT LENGTH, not by landmark
+    # height: once the arm is abducted, elbow height no longer equals shoulder
+    # height minus upper-arm length. Getting this wrong shortens the humerus.
+    upper_len = anthro.SEGMENTS["upper_arm"] * h
+    fore_len = anthro.SEGMENTS["forearm"] * h
+
+    def arm_dir(abduction_deg, forward_deg, sx):
+        a = math.radians(abduction_deg)
+        f = math.radians(forward_deg)
+        return vm.normalize((sx * math.sin(a) * math.cos(f),
+                             -math.cos(a),
+                             math.sin(f)))
+
     for side, sx in (("L", 1.0), ("R", -1.0)):
+        acromion = (sx * sw, y(p.shoulder_y), 0.0)
+        upper = vm.add(acromion, (0.0, -p.upperarm_r * h * 0.35, 0.0))
+        elbow = vm.add(upper, vm.mul(
+            arm_dir(anthro.ARM_ABDUCTION, anthro.ARM_FORWARD, sx), upper_len))
+        wrist = vm.add(elbow, vm.mul(
+            arm_dir(anthro.FOREARM_ABDUCTION, anthro.FOREARM_FORWARD, sx),
+            fore_len))
         bones += [
             Bone(f"Shoulder_{side}", "UpperChest",
                  (sx * sw * 0.34, y(p.shoulder_y), 0.0)),
-            Bone(f"UpperArm_{side}", f"Shoulder_{side}",
-                 (sx * sw, y(p.shoulder_y) - p.upperarm_r * h * 0.5, 0.0)),
-            Bone(f"Forearm_{side}", f"UpperArm_{side}",
-                 (sx * sw * 1.05, y(p.elbow_y), 0.0)),
-            Bone(f"Hand_{side}", f"Forearm_{side}",
-                 (sx * sw * 1.09, y(p.wrist_y), 0.0)),
+            Bone(f"UpperArm_{side}", f"Shoulder_{side}", upper),
+            Bone(f"Forearm_{side}", f"UpperArm_{side}", elbow),
+            Bone(f"Hand_{side}", f"Forearm_{side}", wrist),
         ]
 
     for side, sx in (("L", 1.0), ("R", -1.0)):
+        # The hip joint is the femoral head at trochanter level, not the crotch.
+        # Rooting the thigh at the crotch cost a fifth of the femur's length and
+        # put the knee's centre of rotation in the wrong place.
         bones += [
-            Bone(f"Thigh_{side}", "Hips", (sx * hip_half, y(p.crotch_y), 0.0)),
+            Bone(f"Thigh_{side}", "Hips", (sx * hip_half, y(p.hip_y), 0.0)),
             Bone(f"Shin_{side}", f"Thigh_{side}",
-                 (sx * hip_half * 0.94, y(p.knee_y), 0.0)),
+                 (sx * hip_half * 0.90, y(p.knee_y), 0.0)),
             Bone(f"Foot_{side}", f"Shin_{side}",
-                 (sx * hip_half * 0.90, y(p.ankle_y), 0.0)),
+                 (sx * hip_half * 0.86, y(p.ankle_y), 0.0)),
             Bone(f"Toe_{side}", f"Foot_{side}",
-                 (sx * hip_half * 0.90, y(0.012), p.foot_len * h * 0.60)),
+                 (sx * hip_half * 0.86, y(0.012), p.foot_len * h * 0.56)),
         ]
 
     return Rig(bones)

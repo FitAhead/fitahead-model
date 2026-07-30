@@ -26,16 +26,21 @@ from fitahead_gen import anthro, params, vecmath as vm  # noqa: E402
 from fitahead_gen.body import Character  # noqa: E402
 from fitahead_gen.manifest import build_archetypes  # noqa: E402
 
-#: site -> (mesh part, height as a fraction of stature, anthro girth key)
-#: Heights are where each girth is conventionally taken.
-#: site -> (label, mesh parts, height fraction, anthro key, bone or None)
-#: The bone is what rings are identified along; see `ring_perimeter`.
+#: site -> (label, mesh parts, fraction ALONG THE BONE, anthro key, bone)
+#:
+#: Positions are bone-relative, not heights. The character stands in an A-pose,
+#: so a given height on an abducted arm is nowhere near the same anatomical point
+#: it would be on a hanging arm — measuring the "forearm" at a fixed height
+#: landed on the wrist and reported the forearm 17% too thin.
+#:
+#: Fractions follow where each girth is conventionally taken: the maximum for the
+#: arm, forearm and calf, and the upper thigh just below the gluteal fold.
 SITES = [
-    ("upper arm", ("upperarm_L",), 0.740, "upper_arm", "UpperArm_L"),
-    ("forearm", ("forearm_L",), 0.588, "forearm", "Forearm_L"),
-    ("thigh", ("thigh_L",), 0.450, "thigh", "Thigh_L"),
-    ("calf", ("shin_L",), 0.230, "calf", "Shin_L"),
-    ("neck", ("neck",), 0.845, "neck", "Neck"),
+    ("upper arm", ("upperarm_L",), 0.45, "upper_arm", "UpperArm_L"),
+    ("forearm", ("forearm_L",), 0.22, "forearm", "Forearm_L"),
+    ("thigh", ("thigh_L",), 0.13, "thigh", "Thigh_L"),
+    ("calf", ("shin_L",), 0.32, "calf", "Shin_L"),
+    ("neck", ("neck",), 0.50, "neck", "Neck"),
 ]
 
 
@@ -56,39 +61,32 @@ def morphed_positions(character, weights):
     return positions
 
 
-def ring_perimeter(character, positions, parts, target_y, tolerance, bone):
-    """Perimeter of the vertex ring nearest `target_y` within the given parts.
+def ring_perimeter(character, positions, parts, bone_t, bone):
+    """Perimeter of the vertex ring nearest `bone_t` along `bone`.
 
-    Rings are identified by ring CENTRE height rather than by vertex height: a
-    limb tube's cross-sections are perpendicular to its bone, and the arms and
-    legs are not perfectly vertical, so the vertices of one ring differ in y by
-    a fraction of a millimetre. Grouping on exact vertex y therefore found rings
-    of one vertex each and reported nothing at all.
+    Rings are identified by distance along the BONE. A limb tube's rings are
+    perpendicular to its bone, so even a small tilt spreads one ring over several
+    millimetres of height; bucketing by height split each ring into quarters and
+    under-reported every girth roughly fourfold.
     """
     body = character.groups[0].mesh
-    candidates = [
-        i for i in range(body.vertex_count)
-        if body.parts[i] in parts
-        and abs(body.positions[i][1] - target_y) < tolerance
-    ]
-    if not candidates:
-        return None
-
-    # Bucket by distance along the BONE, not by height. A limb tube's rings are
-    # perpendicular to its bone, and even a 2-degree tilt spreads one ring over
-    # several millimetres of height — height bucketing split each ring into
-    # quarters and under-reported every girth by about 4x.
     start, end = character.rig.segment(bone)
     axis = vm.normalize(vm.sub(end, start))
+    bone_len = vm.length(vm.sub(end, start))
+    target = bone_t * bone_len
+
     buckets = {}
-    for i in candidates:
+    for i in range(body.vertex_count):
+        if body.parts[i] not in parts:
+            continue
         along = vm.dot(vm.sub(body.positions[i], start), axis)
-        buckets.setdefault(round(along * 2000), []).append(i)
+        buckets.setdefault(round(along * 2000), []).append((i, along))
     rings = [r for r in buckets.values() if len(r) >= 3]
     if not rings:
         return None
-    ring = min(rings, key=lambda r: abs(
-        sum(body.positions[i][1] for i in r) / len(r) - target_y))
+    chosen = min(rings, key=lambda r: abs(
+        sum(a for _, a in r) / len(r) - target))
+    ring = [i for i, _ in chosen]
 
     # order around the ring in its own plane, then sum true 3D edge lengths
     centre = (sum(positions[i][0] for i in ring) / len(ring),
@@ -121,12 +119,11 @@ def report(preset_name, archetype_ids):
     header += f"{'ref lean':>10s}{'ref avg':>9s}{'ref trained':>12s}"
     print(header)
 
-    for label, parts, y_fraction, girth_key, bone in SITES:
+    for label, parts, bone_t, girth_key, bone in SITES:
         row = f"{label:11s}"
         for key in archetype_ids:
             positions = morphed_positions(character, archetypes[key]["weights"])
-            value = ring_perimeter(character, positions, parts,
-                                   y_fraction * h, 0.05 * h, bone)
+            value = ring_perimeter(character, positions, parts, bone_t, bone)
             row += f"{value * 100:12.1f}" if value else f"{'-':>12s}"
         ref = anthro.GIRTHS[p.sex][girth_key]
         row += (f"{ref['lean'] * h * 100:10.1f}"

@@ -5,6 +5,12 @@ FitAhead의 Flutter 3D 캐릭터 — 모델 에셋과 그 도메인 모델.
 운동 동기부여가 목적인 캐릭터입니다. 사용자가 운동하면 **해당 근육이 실제로 커지고**,
 부위별로 **카메라를 클로즈업**해서 변화를 확인할 수 있습니다.
 
+**A포즈 · 인체측정 기반 · 척추 만곡 · 근육 13종**
+
+| 정면 | 3/4 | 측면 | 배면 |
+|:---:|:---:|:---:|:---:|
+| ![](docs/renders/male-muscular.png) | ![](docs/renders/male-muscular-34.png) | ![](docs/renders/male-muscular-side.png) | ![](docs/renders/male-muscular-back.png) |
+
 ## 체형 5종 — 하나의 메시, 다른 모프 가중치
 
 | 마른 | 평범 | 운동하는 | 근육질 | 과체중 |
@@ -20,9 +26,12 @@ FitAhead의 Flutter 3D 캐릭터 — 모델 에셋과 그 도메인 모델.
 
 ## 근육별 클로즈업
 
-| 대흉근 | 광배근 | 이두 | 복직근 | 대퇴사두 |
-|:---:|:---:|:---:|:---:|:---:|
-| ![](docs/renders/focus-pecs.png) | ![](docs/renders/focus-lats.png) | ![](docs/renders/focus-biceps.png) | ![](docs/renders/focus-abs.png) | ![](docs/renders/focus-quads.png) |
+| 대흉근 | 광배근 | 이두 | 삼두 | 복직근 | 대퇴사두 | 비복근 |
+|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
+| ![](docs/renders/focus-pecs.png) | ![](docs/renders/focus-lats.png) | ![](docs/renders/focus-biceps.png) | ![](docs/renders/focus-triceps.png) | ![](docs/renders/focus-abs.png) | ![](docs/renders/focus-quads.png) | ![](docs/renders/focus-calves.png) |
+
+삼두 뷰가 팔 뒤쪽에서 잡히는 건 의도입니다 — 삼두는 상완 후면에 있어서 정면 컷으로는
+안 보입니다. 부위별로 근육이 카메라를 향하도록 요각을 정합니다.
 
 ---
 
@@ -87,6 +96,10 @@ VRM 계열 휴머노이드 애니메이션을 노드 인덱스가 아니라 본 
 
 ## 현재 상태
 
+- [x] A포즈 · 인체측정 기반 골격 (뼈 길이·고관절 위치 검증)
+- [x] 측면 척추 만곡 + 부위별 단면 형태 (앞/뒤 깊이 독립)
+- [x] 사지 반지름 프로파일 — 원뿔이 아닌 근육 배 형태
+- [x] 발바닥이 y=0에 접지, 캐릭터 키가 지정값과 정확히 일치
 - [x] 남/여 파라메트릭 캐릭터 — 인체측정 데이터 기반
 - [x] 해부학 기준 근육 모프 13종 + 체지방 패턴 2종
 - [x] 체형 5종 (마른/평범/운동하는/근육질/과체중)
@@ -95,9 +108,12 @@ VRM 계열 휴머노이드 애니메이션을 노드 인덱스가 아니라 본 
 - [x] 교체 가능한 얼굴 플레이트
 - [x] 근육별 카메라 프레이밍 17종 (성장 여유분 포함)
 - [x] sparse accessor — 모프 6종 추가·정점 40% 증가에도 파일 크기 감소
-- [x] Khronos 검증기 에러 0 / 경고 0, Dart 테스트 61개
+- [x] Khronos 검증기 에러 0 / 경고 0, Dart 테스트 71개
 - [ ] **렌더러 선택** — [설계 문서](docs/CHARACTER_DESIGN.md) 8절
 - [ ] 아이들/운동 애니메이션 클립
+- [ ] **사지 표면 근육 디테일** — 현재 사지는 매끄러운 곡면입니다. 삼각근·이두의 경계가
+      드러나려면 몸통에 UV를 부여하고 노멀 맵을 쓰는 게 맞습니다 (지오메트리로는 정점 폭발)
+- [ ] 손가락 — 현재 손은 손바닥 패들
 - [ ] 의상·헤어 커스터마이징
 
 ## 문서

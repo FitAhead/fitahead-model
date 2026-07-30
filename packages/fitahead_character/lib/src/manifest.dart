@@ -66,6 +66,7 @@ class CharacterPreset {
     required this.humanoidBones,
     required this.absFatOcclusion,
     required this.fatSplit,
+    required this.stats,
   });
 
   factory CharacterPreset.fromJson(Map<String, dynamic> json) {
@@ -100,6 +101,7 @@ class CharacterPreset {
       ),
       absFatOcclusion: (json['absFatOcclusion'] as num).toDouble(),
       fatSplit: FatSplit.fromJson(json['fatSplit'] as Map<String, dynamic>),
+      stats: PresetStats.fromJson(json['stats'] as Map<String, dynamic>),
     );
   }
 
@@ -130,6 +132,8 @@ class CharacterPreset {
   final double absFatOcclusion;
 
   final FatSplit fatSplit;
+
+  final PresetStats stats;
 
   BodyArchetype? archetype(String id) {
     for (final a in archetypes) {
@@ -232,6 +236,49 @@ class JointInfo {
   /// (only `Root` today). Lets humanoid animation be remapped by role rather
   /// than by node index.
   final String? humanoid;
+}
+
+/// Mesh facts about a generated preset.
+class PresetStats {
+  const PresetStats({
+    required this.vertices,
+    required this.triangles,
+    required this.joints,
+    required this.morphTargets,
+    required this.muscleGroups,
+    required this.boundsMin,
+    required this.boundsMax,
+    required this.measuredHeight,
+  });
+
+  factory PresetStats.fromJson(Map<String, dynamic> json) => PresetStats(
+        vertices: json['vertices'] as int,
+        triangles: json['triangles'] as int,
+        joints: json['joints'] as int,
+        morphTargets: json['morphTargets'] as int,
+        muscleGroups: json['muscleGroups'] as int,
+        boundsMin: _vec(json['boundsMin'] as List),
+        boundsMax: _vec(json['boundsMax'] as List),
+        measuredHeight: (json['measuredHeight'] as num).toDouble(),
+      );
+
+  static List<double> _vec(List<dynamic> v) =>
+      List<double>.unmodifiable(v.map((e) => (e as num).toDouble()));
+
+  final int vertices;
+  final int triangles;
+  final int joints;
+  final int morphTargets;
+  final int muscleGroups;
+
+  /// Axis-aligned bounds at rest, in metres. `boundsMin[1]` is the sole: the
+  /// character stands on y = 0, so the app can place it on a floor directly.
+  final List<double> boundsMin;
+  final List<double> boundsMax;
+
+  /// Height of the actual mesh. Should equal the preset's stated height — it is
+  /// asserted in the tests because it silently did not for a while.
+  final double measuredHeight;
 }
 
 /// Sex-typical split of body fat between the two deposition patterns.

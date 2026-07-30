@@ -64,6 +64,7 @@ class BodyParams:
     forearm_r: float = 0.022
     wrist_r: float = 0.015
     hand_r: float = 0.034
+    hand_len: float = anthro.HAND_LENGTH
 
     thigh_r: float = 0.045
     shin_r: float = 0.031
@@ -132,6 +133,7 @@ def _preset(name, sex, height, *, skin, accent, leg_stance, squash=1.03):
         forearm_r=r("forearm"),
         wrist_r=r("wrist"),
         hand_r=anthro.HAND_LENGTH * 0.34,
+        hand_len=anthro.HAND_LENGTH,
         thigh_r=r("thigh"),
         shin_r=r("calf"),
         ankle_r=r("ankle"),

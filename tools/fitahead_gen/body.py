@@ -10,7 +10,33 @@ from .rig import PART_BONES, build_rig
 #: 40 segments the six-pack turns into a single lumpy panel.
 SEGMENTS_TORSO = 48
 TORSO_SUBDIVISIONS = 4
-SEGMENTS_LIMB = 20
+SEGMENTS_LIMB = 22
+
+#: A foot is about 10 cm wide and 6 cm tall, so its cross-section is squashed.
+FOOT_ASPECT = 0.66
+
+# Radius profiles along each limb, as (t, multiplier) applied over the linear
+# taper. Real limbs are not cones — the mass of a muscle sits at its belly, and a
+# straight taper is what makes a figure read as a mannequin.
+# Profiles must match in VALUE and roughly in SLOPE where two tubes meet. Equal
+# values alone still creases: a radius falling into the elbow that then rises
+# again over one segment reads as a ring cut around the joint.
+PROFILE_UPPERARM = [(0.0, 1.07), (0.18, 1.03), (0.50, 1.00), (0.84, 0.98),
+                    (1.0, 0.98)]
+PROFILE_FOREARM = [(0.0, 0.98), (0.16, 1.02), (0.30, 1.05), (0.58, 0.97),
+                   (1.0, 1.00)]
+#: Thigh: fullest in the upper third, then a hard narrowing into the knee.
+PROFILE_THIGH = [(0.0, 0.95), (0.18, 1.04), (0.50, 1.00), (0.86, 0.96),
+                 (1.0, 0.95)]
+#: Shin: dips just below the knee, swells into the gastrocnemius heads high on
+#: the calf, then tapers to an ankle that training barely changes.
+#: Matches PROFILE_THIGH's end value at t=0 — a mismatch across the knee shows
+#: as a hard ring, and a bulge on one side meeting a dip on the other is worse
+#: than either alone.
+PROFILE_SHIN = [(0.0, 0.95), (0.16, 0.95), (0.36, 0.99), (0.68, 0.86),
+                (1.0, 1.00)]
+#: The hand is a flat paddle that follows the forearm.
+PROFILE_HAND = [(0.0, 0.80), (0.22, 1.00), (0.70, 1.00), (1.0, 0.72)]
 
 
 class MeshGroup:
@@ -80,57 +106,81 @@ class Character:
         return p.chest_y + (p.shoulder_y - p.chest_y) * 0.62
 
     def _torso_sections(self):
-        """Key cross-sections of the torso, bottom to top."""
+        """Key cross-sections of the torso, bottom to top.
+
+        Each entry is `(y, rx, rz, front, back)` where `front`/`back` multiply the
+        half-depth on that side. This is what gives the body a side profile
+        instead of a straight tube:
+
+        * buttocks project back most just below the trochanter (back 1.16)
+        * the lumbar curve pulls the back surface IN at the natural waist (0.84)
+        * the abdomen is fullest BELOW the waist, not at it
+        * the upper back bulges over the scapulae (back 1.14)
+
+        Every one of those is a real landmark, and their absence is why the first
+        version read as a plank when seen from the side.
+        """
         p = self.p
         uc = self._upper_chest_y()
         return [
             # the bottom sits high enough that the thigh caps cover it; a lower
             # bottom shows its end cap through the gap between the legs
-            (p.crotch_y - 0.008, p.hip_rx * 0.84, p.hip_rz * 0.86),
-            (p.crotch_y + 0.025, p.hip_rx * 0.97, p.hip_rz * 0.96),
-            (p.hip_y, p.hip_rx, p.hip_rz),
-            (p.waist_y, p.waist_rx, p.waist_rz),
-            (p.waist_y + (p.chest_y - p.waist_y) * 0.55,
-             p.waist_rx + (p.chest_rx - p.waist_rx) * 0.66,
-             p.waist_rz + (p.chest_rz - p.waist_rz) * 0.66),
-            (p.chest_y, p.chest_rx, p.chest_rz),
-            (uc, p.shoulder_rx * 0.97, p.shoulder_rz * 1.0),
-            (p.shoulder_y, p.shoulder_rx, p.shoulder_rz),
+            (p.crotch_y - 0.006, p.hip_rx * 0.80, p.hip_rz, 0.76, 0.94),
+            (p.crotch_y + 0.022, p.hip_rx * 0.95, p.hip_rz, 0.86, 1.16),
+            (p.hip_y, p.hip_rx, p.hip_rz, 0.90, 1.12),
+            (p.hip_y + 0.038, p.hip_rx * 0.93, p.hip_rz * 0.96, 0.98, 0.96),
+            # lower abdomen is fuller than the natural waist above it
+            (p.waist_y - 0.028, p.waist_rx * 1.05, p.waist_rz, 1.06, 0.90),
+            (p.waist_y, p.waist_rx, p.waist_rz, 0.98, 0.84),
+            (p.waist_y + (p.chest_y - p.waist_y) * 0.52,
+             p.waist_rx + (p.chest_rx - p.waist_rx) * 0.60,
+             p.waist_rz + (p.chest_rz - p.waist_rz) * 0.60, 1.04, 0.95),
+            (p.chest_y, p.chest_rx, p.chest_rz, 1.05, 1.03),
+            (uc, p.shoulder_rx * 0.97, p.shoulder_rz, 0.98, 1.14),
+            (p.shoulder_y, p.shoulder_rx, p.shoulder_rz, 0.90, 1.06),
             # trapezius slope: long enough that the shoulder line does not read
             # as a flat shelf with a head balanced on it
-            (p.shoulder_y + 0.016, p.shoulder_rx * 0.70, p.shoulder_rz * 0.86),
-            (p.shoulder_y + 0.032, p.shoulder_rx * 0.36, p.shoulder_rz * 0.62),
+            (p.shoulder_y + 0.016, p.shoulder_rx * 0.70, p.shoulder_rz * 0.86,
+             0.88, 1.02),
+            (p.shoulder_y + 0.032, p.shoulder_rx * 0.36, p.shoulder_rz * 0.62,
+             0.94, 1.00),
             # stop at the neck radius: any wider and the torso reads as a collar
             # with the neck hidden inside it
-            (p.neck_y - 0.012, p.neck_r * 1.12, p.neck_r * 1.18),
+            (p.neck_y - 0.014, p.neck_r * 0.94, p.neck_r * 0.98, 1.0, 1.0),
         ]
 
     def _resample(self, sections, subdivisions=TORSO_SUBDIVISIONS):
         """Subdivide key sections into a smooth ring stack."""
         rings = []
         for i in range(len(sections) - 1):
-            y0, rx0, rz0 = sections[i]
-            y1, rx1, rz1 = sections[i + 1]
+            a, b = sections[i], sections[i + 1]
             for s in range(subdivisions):
                 t = s / subdivisions
-                # ease the radius so the silhouette curves rather than showing
+                # ease the radii so the silhouette curves rather than showing
                 # straight facets between key sections
                 e = t * t * (3.0 - 2.0 * t)
-                rings.append((y0 + (y1 - y0) * t,
-                              rx0 + (rx1 - rx0) * e,
-                              rz0 + (rz1 - rz0) * e))
+                rings.append((
+                    a[0] + (b[0] - a[0]) * t,
+                    *[a[k] + (b[k] - a[k]) * e for k in range(1, len(a))],
+                ))
         rings.append(sections[-1])
         return rings
 
-    def _build_torso(self, mesh):
+    def _torso_rings(self, scale=1.0):
         h, p = self.p.height, self.p
-        rings = [
-            {"center": (0.0, y * h, 0.0), "rx": rx * h, "rz": rz * h,
-             "squash": p.torso_squash}
-            for (y, rx, rz) in self._resample(self._torso_sections())
+        return [
+            {"center": (0.0, y * h, 0.0),
+             "rx": rx * h * scale, "rz": rz * h * scale,
+             "rz_front": rz * front * h * scale,
+             "rz_back": rz * back * h * scale,
+             "squash": p.torso_squash,
+             "y": y}
+            for (y, rx, rz, front, back) in self._resample(self._torso_sections())
         ]
-        geom.loft(mesh, rings, "torso", segments=SEGMENTS_TORSO,
-                  cap_start=True, cap_end=True)
+
+    def _build_torso(self, mesh):
+        geom.loft(mesh, self._torso_rings(), "torso",
+                  segments=SEGMENTS_TORSO, cap_start=True, cap_end=True)
 
     def _build_head_and_neck(self, mesh):
         p, rig, h = self.p, self.rig, self.p.height
@@ -155,23 +205,50 @@ class Character:
         # sphere: a standalone ball leaves a crease where it meets the tube, and
         # the crease is exactly where the delts morph swells. The cap radius is
         # generous enough to overlap the torso, so the joint reads as continuous.
-        elbow_r = p.forearm_r * h * 1.12
+        elbow_r = p.forearm_r * h * 1.02
         geom.tube(mesh, upper, elbow,
                   p.upperarm_r * h, elbow_r,
-                  f"upperarm_{side}", segments=SEGMENTS_LIMB, slices=12,
+                  f"upperarm_{side}", segments=SEGMENTS_LIMB, slices=14,
+                  profile=PROFILE_UPPERARM,
                   cap_start=False, cap_end=False,
-                  round_start=p.upperarm_r * h * 1.25)
+                  round_start=p.upperarm_r * h * 1.30)
         # matching radii across the elbow keep the two tubes seamless
         geom.tube(mesh, elbow, wrist,
-                  elbow_r, p.wrist_r * h * 1.20,
-                  f"forearm_{side}", segments=SEGMENTS_LIMB, slices=10,
+                  elbow_r, p.wrist_r * h * 1.10,
+                  f"forearm_{side}", segments=SEGMENTS_LIMB, slices=12,
+                  profile=PROFILE_FOREARM,
                   cap_start=False, cap_end=False)
 
-        # mitten-shaped hand: flattened front-to-back, elongated down the arm
+        # A mitten built ALONG the forearm, not a world-axis-aligned ellipsoid.
+        # With the arm abducted 47 degrees, a sphere scaled on world Y elongates
+        # vertically while the arm points diagonally — the hand ended up
+        # crossing its own wrist.
         arm_dir = vm.normalize(vm.sub(wrist, elbow))
-        hand_c = vm.add(wrist, vm.mul(arm_dir, p.hand_r * h * 0.55))
-        geom.sphere(mesh, hand_c, p.hand_r * h, f"hand_{side}",
-                    segments=18, rings=14, scale=(0.60, 1.30, 0.42))
+        hand_tip = vm.add(wrist, vm.mul(arm_dir, p.hand_len * h * 0.88))
+        geom.tube(mesh, wrist, hand_tip,
+                  p.wrist_r * h * 1.55, p.wrist_r * h * 1.35,
+                  f"hand_{side}", segments=SEGMENTS_LIMB, slices=7,
+                  profile=PROFILE_HAND, aspect_x=0.46,
+                  cap_start=False, round_end=p.wrist_r * h * 0.9)
+
+    def _foot_axis(self, ankle, toe):
+        """Heel and toe-tip of a foot whose SOLE lies flat on y = 0.
+
+        The sole is the one part of the body whose position is not negotiable:
+        the character stands on it. Placing the foot as a tube centred on the
+        ankle joint left the sole floating and made the figure measure 0.4%
+        taller than its stated height, since the vertex is fixed at the top.
+
+        Both ends sit at their own radius above the ground, so the tube's lowest
+        surface is y = 0 along its whole length rather than only at one end.
+        """
+        p, h = self.p, self.p.height
+        r_heel = p.foot_r * h * 0.60
+        r_tip = p.foot_r * h * 0.40
+        heel = (ankle[0], r_heel * FOOT_ASPECT,
+                ankle[2] - p.foot_len * h * 0.23)
+        tip = (toe[0], r_tip * FOOT_ASPECT, toe[2])
+        return heel, tip, r_heel, r_tip
 
     def _build_leg(self, mesh, side):
         p, rig, h = self.p, self.rig, self.p.height
@@ -180,22 +257,30 @@ class Character:
         ankle = rig.world(f"Foot_{side}")
         toe = rig.world(f"Toe_{side}")
 
-        knee_r = p.shin_r * h * 1.06
+        knee_r = p.shin_r * h * 1.10
         # the thigh's start cap reaches up over the crotch and hides where the
         # torso loft is capped off
         geom.tube(mesh, hip, knee,
                   p.thigh_r * h, knee_r,
-                  f"thigh_{side}", segments=SEGMENTS_LIMB, slices=12,
-                  cap_end=False, round_start=p.thigh_r * h * 0.95)
+                  f"thigh_{side}", segments=SEGMENTS_LIMB, slices=14,
+                  profile=PROFILE_THIGH,
+                  cap_end=False,
+                  round_start=p.thigh_r * h * geom.profile_at(PROFILE_THIGH, 0.0)
+                  * 0.85)
         geom.tube(mesh, knee, ankle,
-                  knee_r, p.ankle_r * h * 1.25,
-                  f"shin_{side}", segments=SEGMENTS_LIMB, slices=12,
+                  knee_r, p.ankle_r * h * 1.15,
+                  f"shin_{side}", segments=SEGMENTS_LIMB, slices=14,
+                  profile=PROFILE_SHIN,
                   cap_start=False, cap_end=False)
-        geom.tube(mesh, ankle, toe,
-                  p.foot_r * h * 0.78, p.foot_r * h * 0.52,
-                  f"foot_{side}", segments=SEGMENTS_LIMB, slices=5,
-                  round_start=p.foot_r * h * 0.62,
-                  round_end=p.foot_r * h * 0.50)
+        # The foot starts BEHIND the ankle so the character has a heel. Running
+        # it from the ankle joint forward left the leg balanced on the front of
+        # its own ankle, which is a large part of why the figure looked unstable.
+        heel, tip, r_heel, r_tip = self._foot_axis(ankle, toe)
+        geom.tube(mesh, heel, tip, r_heel, r_tip,
+                  f"foot_{side}", segments=SEGMENTS_LIMB, slices=7,
+                  aspect=FOOT_ASPECT,
+                  round_start=r_heel * 0.42,
+                  round_end=r_tip * 0.80)
 
     def _build_outfit(self, mesh):
         """Shorts for everyone, plus a crop top on the female preset.
@@ -207,20 +292,14 @@ class Character:
         p, rig, h = self.p, self.rig, self.p.height
         pad = 1.042
 
-        shorts = [
-            (y, rx * pad, rz * pad)
-            for (y, rx, rz) in self._resample(self._torso_sections())
-            # the waistband sits ON the hip, below where the abdominal fat morph
-            # starts: any higher and the shorts inflate with the belly and read
-            # as a nappy rather than as athletic shorts
-            if p.crotch_y - 0.018 <= y <= p.hip_y + 0.016
-        ]
-        # both ends open: a capped waistband would show a disc floating between
-        # the legs, and the body underneath already closes the silhouette
+        # the waistband sits ON the hip, below where the abdominal fat morph
+        # starts: any higher and the shorts inflate with the belly and read as a
+        # nappy rather than as athletic shorts. Both ends stay open — a capped
+        # waistband shows a disc floating between the legs.
         geom.loft(
             mesh,
-            [{"center": (0.0, y * h, 0.0), "rx": rx * h, "rz": rz * h,
-              "squash": p.torso_squash} for (y, rx, rz) in shorts],
+            [r for r in self._torso_rings(scale=pad)
+             if p.crotch_y + 0.012 <= r["y"] <= p.hip_y + 0.014],
             "torso", segments=SEGMENTS_TORSO, cap_start=False, cap_end=False,
         )
 
@@ -229,36 +308,34 @@ class Character:
             knee = rig.world(f"Shin_{side}")
             leg_dir = vm.normalize(vm.sub(knee, hip))
             thigh_len = vm.length(vm.sub(knee, hip))
-            # start above the hip joint so the cuff overlaps the waistband
+            # Placed as a fraction ALONG THE THIGH, starting just above the
+            # femoral head so it tucks inside the waistband. Offsets relative to
+            # the old crotch-rooted hip sent the cuff up past the waistband and
+            # left a hole between the two.
             geom.tube(mesh,
-                      vm.add(hip, vm.mul(leg_dir, -thigh_len * 0.34)),
-                      vm.add(hip, vm.mul(leg_dir, thigh_len * 0.52)),
-                      p.thigh_r * h * pad, p.thigh_r * h * 0.92 * pad,
-                      f"thigh_{side}", segments=SEGMENTS_LIMB, slices=5,
+                      vm.add(hip, vm.mul(leg_dir, -thigh_len * 0.03)),
+                      vm.add(hip, vm.mul(leg_dir, thigh_len * 0.50)),
+                      p.thigh_r * h * pad * geom.profile_at(PROFILE_THIGH, 0.0),
+                      p.thigh_r * h * pad * geom.profile_at(PROFILE_THIGH, 0.50),
+                      f"thigh_{side}", segments=SEGMENTS_LIMB, slices=6,
                       cap_start=False, cap_end=False)
 
             # trainers: a shell over the foot, which also stops the bare foot
             # from reading as a pale detached blob at the end of the leg
             ankle = rig.world(f"Foot_{side}")
             toe = rig.world(f"Toe_{side}")
-            foot_dir = vm.normalize(vm.sub(toe, ankle))
-            geom.tube(mesh,
-                      vm.add(ankle, vm.mul(foot_dir, -0.012 * h)), toe,
-                      p.foot_r * h * 0.78 * pad, p.foot_r * h * 0.52 * pad,
-                      f"foot_{side}", segments=SEGMENTS_LIMB, slices=5,
-                      round_start=p.foot_r * h * 0.62,
-                      round_end=p.foot_r * h * 0.50)
+            heel, tip, r_heel, r_tip = self._foot_axis(ankle, toe)
+            geom.tube(mesh, heel, tip, r_heel * pad, r_tip * pad,
+                      f"foot_{side}", segments=SEGMENTS_LIMB, slices=7,
+                      aspect=FOOT_ASPECT,
+                      round_start=r_heel * 0.42,
+                      round_end=r_tip * 0.80)
 
         if p.tags.get("sex") == "female":
-            top = [
-                (y, rx * pad, rz * pad)
-                for (y, rx, rz) in self._resample(self._torso_sections())
-                if p.chest_y - 0.055 <= y <= p.shoulder_y - 0.020
-            ]
             geom.loft(
                 mesh,
-                [{"center": (0.0, y * h, 0.0), "rx": rx * h, "rz": rz * h,
-                  "squash": p.torso_squash} for (y, rx, rz) in top],
+                [r for r in self._torso_rings(scale=pad)
+                 if p.chest_y - 0.058 <= r["y"] <= p.shoulder_y - 0.022],
                 "torso", segments=SEGMENTS_TORSO, cap_start=False,
                 cap_end=False,
             )
@@ -375,8 +452,28 @@ class Character:
 
     # -- reporting ---------------------------------------------------------
 
+    def bounds(self):
+        """Axis-aligned bounds of every mesh, at rest.
+
+        Exposed so the app can frame the character without guessing, and so a
+        test can assert the figure is exactly as tall as it claims — it stood
+        3.6% over for a while and nothing caught it.
+        """
+        lo = [float("inf")] * 3
+        hi = [float("-inf")] * 3
+        for g in self.groups:
+            for pos in g.mesh.positions:
+                for i in range(3):
+                    lo[i] = min(lo[i], pos[i])
+                    hi[i] = max(hi[i], pos[i])
+        return [round(v, 5) for v in lo], [round(v, 5) for v in hi]
+
     def stats(self):
+        lo, hi = self.bounds()
         return {
+            "boundsMin": lo,
+            "boundsMax": hi,
+            "measuredHeight": round(hi[1] - lo[1], 5),
             "vertices": sum(g.mesh.vertex_count for g in self.groups),
             "triangles": sum(g.mesh.triangle_count for g in self.groups),
             "joints": len(self.rig.bones),

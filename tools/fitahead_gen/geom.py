@@ -83,9 +83,16 @@ def compute_normals_for(positions, indices):
     return [vm.normalize(n) for n in acc]
 
 
-def _ellipse_point(angle, rx, rz, squash=1.0):
-    """Point on an ellipse; `squash` > 1 flattens it toward a rounded rectangle."""
+def _ellipse_point(angle, rx, rz_front, rz_back, squash=1.0):
+    """Point on a cross-section that may differ front to back.
+
+    A human torso is not an ellipse at any height. The pelvis is deep behind and
+    shallow in front, the small of the back curves IN while the abdomen curves
+    out, and the upper back bulges over the scapulae. One radius per axis cannot
+    express that, so front and back depth are independent.
+    """
     c, s = math.cos(angle), math.sin(angle)
+    rz = rz_front if s >= 0.0 else rz_back
     if abs(squash - 1.0) < 1e-6:
         return c * rx, s * rz
     e = 1.0 / squash
@@ -97,21 +104,24 @@ def _ellipse_point(angle, rx, rz, squash=1.0):
 def loft(mesh, rings, part, segments=24, cap_start=False, cap_end=False):
     """Build a tube through a list of cross-section rings.
 
-    Each ring is a dict: {center, rx, rz, squash?, right?, forward?}.
-    `right`/`forward` define the ring plane and default to world X/Z, so a
-    vertical stack of rings (the torso) needs no axis bookkeeping.
+    Each ring is a dict: {center, rx, rz, rz_front?, rz_back?, squash?, right?,
+    forward?}. `rz_front`/`rz_back` default to `rz`. `right`/`forward` define the
+    ring plane and default to world X/Z, so a vertical stack of rings (the torso)
+    needs no axis bookkeeping.
     """
     ring_indices = []
     for ring in rings:
         center = ring["center"]
         rx, rz = ring["rx"], ring["rz"]
+        rz_front = ring.get("rz_front", rz)
+        rz_back = ring.get("rz_back", rz)
         squash = ring.get("squash", 1.0)
         right = ring.get("right", (1.0, 0.0, 0.0))
         forward = ring.get("forward", (0.0, 0.0, 1.0))
         row = []
         for s in range(segments):
             angle = 2.0 * math.pi * s / segments
-            ex, ez = _ellipse_point(angle, rx, rz, squash)
+            ex, ez = _ellipse_point(angle, rx, rz_front, rz_back, squash)
             p = vm.add(center, vm.add(vm.mul(right, ex), vm.mul(forward, ez)))
             row.append(mesh.add_vertex(p, (0.0, 0.0), part))
         ring_indices.append(row)
@@ -138,44 +148,68 @@ def _cap(mesh, ring, center, inner_center, part):
         mesh.add_triangle_facing(hub, ring[s], ring[(s + 1) % n], inner_center)
 
 
+def profile_at(profile, t):
+    """Piecewise-linear lookup over (t, multiplier) control points."""
+    if not profile:
+        return 1.0
+    if t <= profile[0][0]:
+        return profile[0][1]
+    for (t0, v0), (t1, v1) in zip(profile, profile[1:]):
+        if t <= t1:
+            k = (t - t0) / max(t1 - t0, 1e-9)
+            return v0 + (v1 - v0) * k
+    return profile[-1][1]
+
+
 def tube(mesh, start, end, r_start, r_end, part, segments=20, slices=8,
-         bulge=0.0, bulge_center=0.5, cap_start=True, cap_end=True,
+         profile=None, aspect=1.0, aspect_x=1.0,
+         cap_start=True, cap_end=True,
          round_start=0.0, round_end=0.0):
     """A tapered tube from `start` to `end`.
 
-    `bulge` adds a swell along the length (biceps, calves), peaking at
-    `bulge_center`. `round_start`/`round_end` extend the tube past its endpoints
-    with a hemispherical cap so shoulders, elbows and knees read as ball joints
-    instead of flat discs.
+    `profile` is a list of `(t, multiplier)` control points applied on top of the
+    linear taper. Real limbs are not cones: the thigh is fullest in its upper
+    third and narrows hard at the knee, the gastrocnemius sits high on the calf,
+    and the forearm's mass is proximal. A straight taper reads as a table leg.
+
+    `aspect` and `aspect_x` squash the cross-section on each of its two axes. A
+    foot is wider than it is tall and a hand is a flat paddle; a circular tube
+    reads as a snowshoe and a sausage respectively. Which world axis each maps to
+    depends on the tube's direction, so both are exposed rather than guessed.
+
+    `round_start`/`round_end` extend the tube past its endpoints with a
+    hemispherical cap, so shoulders, hips and ankles read as joints rather than
+    as flat discs.
     """
     direction = vm.sub(end, start)
     right, up, axis = vm.basis_from_dir(direction)
     length = vm.length(direction)
-    # remap t so sin(pi*t) peaks at bulge_center instead of the midpoint
-    bulge_exp = math.log(0.5) / math.log(max(min(bulge_center, 0.95), 0.05))
 
     rings = []
     if round_start > 0.0:
         rings.extend(_hemisphere_rings(start, axis, right, up, r_start,
-                                       round_start, slices=4, invert=True))
+                                       round_start, slices=4, invert=True,
+                                       aspect=aspect, aspect_x=aspect_x))
     for i in range(slices + 1):
         t = i / slices
-        r = r_start + (r_end - r_start) * t
-        r += bulge * math.sin(math.pi * (t ** bulge_exp))
+        r = (r_start + (r_end - r_start) * t) * profile_at(profile, t)
         rings.append({
             "center": vm.add(start, vm.mul(axis, length * t)),
-            "rx": r, "rz": r, "right": right, "forward": up,
+            "rx": r * aspect_x, "rz": r * aspect,
+            "right": right, "forward": up,
         })
     if round_end > 0.0:
         rings.extend(_hemisphere_rings(end, axis, right, up, r_end,
-                                       round_end, slices=4, invert=False))
+                                       round_end, slices=4, invert=False,
+                                       aspect=aspect, aspect_x=aspect_x))
 
     return loft(mesh, rings, part, segments=segments,
                 cap_start=cap_start and round_start <= 0.0,
                 cap_end=cap_end and round_end <= 0.0)
 
 
-def _hemisphere_rings(apex_center, axis, right, up, radius, extent, slices, invert):
+def _hemisphere_rings(apex_center, axis, right, up, radius, extent, slices,
+                      invert, aspect=1.0, aspect_x=1.0):
     """Rings tracing a hemisphere cap; `invert` points it backwards along axis."""
     rings = []
     order = range(slices, 0, -1) if invert else range(1, slices + 1)
@@ -185,7 +219,11 @@ def _hemisphere_rings(apex_center, axis, right, up, radius, extent, slices, inve
         r = radius * math.cos(t * math.pi / 2.0)
         offset = extent * math.sin(t * math.pi / 2.0)
         center = vm.add(apex_center, vm.mul(axis, -offset if invert else offset))
-        rings.append({"center": center, "rx": max(r, 1e-4), "rz": max(r, 1e-4),
+        # the caps must carry the tube's own aspect ratio, or a flattened foot
+        # grows a circular hemisphere at the heel that dips below the sole
+        rings.append({"center": center,
+                      "rx": max(r * aspect_x, 1e-4),
+                      "rz": max(r * aspect, 1e-4),
                       "right": right, "forward": up})
     return rings
 

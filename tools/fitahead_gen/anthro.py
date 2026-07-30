@@ -45,13 +45,13 @@ HEIGHTS = {
 HEAD_HEIGHT = 0.130
 
 #: Deliberate stylisation: the head is enlarged so the face stays readable at
-#: phone size, giving roughly a 6.9-head figure instead of 7.7. This is the one
+#: phone size, giving roughly a 7.3-head figure instead of 7.7. This is the one
 #: proportion knowingly taken away from anatomy, and the only one.
 #:
 #: It is bounded by the neck: the chin sits at HEAD_HEIGHT below the vertex, and
 #: the acromion at 0.818H, so a scale much past 1.15 leaves no visible neck and
 #: the head appears to rest straight on the shoulders.
-HEAD_STYLE_SCALE = 1.12
+HEAD_STYLE_SCALE = 1.06
 
 
 def head_center_y(style_scale=None):
@@ -72,6 +72,39 @@ HEAD_SQUASH_Y = 1.05
 
 FOOT_LENGTH = 0.152
 HAND_LENGTH = 0.108
+
+# ---------------------------------------------------------------------------
+# Segment lengths along the bone, as fractions of stature.
+#
+# Needed separately from HEIGHTS because the character stands in an A-pose: once
+# the arm is abducted, elbow HEIGHT no longer equals shoulder height minus upper
+# arm length. The lengths below are what stay constant.
+#
+# Hip is the femoral head at trochanter level (0.530H), NOT the crotch. Placing
+# the hip joint at the crotch shortens the femur by a fifth and makes the knee
+# bend from the wrong place.
+# ---------------------------------------------------------------------------
+SEGMENTS = {
+    "upper_arm": HEIGHTS["shoulder"] - HEIGHTS["elbow"],   # acromion -> radiale
+    "forearm": HEIGHTS["elbow"] - HEIGHTS["wrist"],        # radiale -> stylion
+    "thigh": HEIGHTS["hip"] - HEIGHTS["knee"],             # femur
+    "shin": HEIGHTS["knee"] - HEIGHTS["ankle"],            # tibia
+}
+
+# ---------------------------------------------------------------------------
+# A-pose. Arms abducted so the armpit and the lats are visible and so skinning
+# has somewhere to deform into; this is the standard authoring pose for a rigged
+# humanoid, and it is also the pose every anatomy reference figure is drawn in.
+# ---------------------------------------------------------------------------
+#: Shoulder abduction, degrees from straight down.
+ARM_ABDUCTION = 47.0
+#: Slight forward carry, degrees — arms hang a little in front of the frontal
+#: plane because the scapulae wrap the ribcage.
+ARM_FORWARD = 7.0
+#: The forearm carries a few degrees straighter than the upper arm (carrying
+#: angle), so the arm is not a single straight stick.
+FOREARM_ABDUCTION = 41.0
+FOREARM_FORWARD = 11.0
 
 # ---------------------------------------------------------------------------
 # Breadths (side to side) and depths (front to back), as fractions of stature.

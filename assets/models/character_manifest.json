@@ -96,7 +96,7 @@
           "parent": "Neck",
           "rest": [
             0.0,
-            1.49617,
+            1.5028,
             0.0
           ],
           "humanoid": "head"
@@ -118,7 +118,7 @@
           "parent": "Shoulder_L",
           "rest": [
             0.1736,
-            1.30567,
+            1.31152,
             0.0
           ],
           "humanoid": "leftUpperArm"
@@ -128,9 +128,9 @@
           "name": "Forearm_L",
           "parent": "UpperArm_L",
           "rest": [
-            0.18228,
-            1.0206,
-            0.0
+            0.39392,
+            1.10452,
+            0.03699
           ],
           "humanoid": "leftLowerArm"
         },
@@ -139,9 +139,9 @@
           "name": "Hand_L",
           "parent": "Forearm_L",
           "rest": [
-            0.18922,
-            0.7857,
-            0.0
+            0.54365,
+            0.92905,
+            0.08135
           ],
           "humanoid": "leftHand"
         },
@@ -162,7 +162,7 @@
           "parent": "Shoulder_R",
           "rest": [
             -0.1736,
-            1.30567,
+            1.31152,
             0.0
           ],
           "humanoid": "rightUpperArm"
@@ -172,9 +172,9 @@
           "name": "Forearm_R",
           "parent": "UpperArm_R",
           "rest": [
-            -0.18228,
-            1.0206,
-            0.0
+            -0.39392,
+            1.10452,
+            0.03699
           ],
           "humanoid": "rightLowerArm"
         },
@@ -183,9 +183,9 @@
           "name": "Hand_R",
           "parent": "Forearm_R",
           "rest": [
-            -0.18922,
-            0.7857,
-            0.0
+            -0.54365,
+            0.92905,
+            0.08135
           ],
           "humanoid": "rightHand"
         },
@@ -195,7 +195,7 @@
           "parent": "Hips",
           "rest": [
             0.07527,
-            0.7857,
+            0.8586,
             0.0
           ],
           "humanoid": "leftUpperLeg"
@@ -205,7 +205,7 @@
           "name": "Shin_L",
           "parent": "Thigh_L",
           "rest": [
-            0.07075,
+            0.06774,
             0.4617,
             0.0
           ],
@@ -216,7 +216,7 @@
           "name": "Foot_L",
           "parent": "Shin_L",
           "rest": [
-            0.06774,
+            0.06473,
             0.06318,
             0.0
           ],
@@ -227,9 +227,9 @@
           "name": "Toe_L",
           "parent": "Foot_L",
           "rest": [
-            0.06774,
+            0.06473,
             0.01944,
-            0.14774
+            0.13789
           ],
           "humanoid": "leftToes"
         },
@@ -239,7 +239,7 @@
           "parent": "Hips",
           "rest": [
             -0.07527,
-            0.7857,
+            0.8586,
             0.0
           ],
           "humanoid": "rightUpperLeg"
@@ -249,7 +249,7 @@
           "name": "Shin_R",
           "parent": "Thigh_R",
           "rest": [
-            -0.07075,
+            -0.06774,
             0.4617,
             0.0
           ],
@@ -260,7 +260,7 @@
           "name": "Foot_R",
           "parent": "Shin_R",
           "rest": [
-            -0.06774,
+            -0.06473,
             0.06318,
             0.0
           ],
@@ -271,9 +271,9 @@
           "name": "Toe_R",
           "parent": "Foot_R",
           "rest": [
-            -0.06774,
+            -0.06473,
             0.01944,
-            0.14774
+            0.13789
           ],
           "humanoid": "rightToes"
         }
@@ -653,7 +653,7 @@
           "labelEn": "Face",
           "target": [
             0.0,
-            1.49617,
+            1.5028,
             0.0
           ],
           "yawDeg": 0.0,
@@ -727,11 +727,11 @@
           "labelKo": "이두",
           "labelEn": "Biceps",
           "target": [
-            0.17707,
-            1.17288,
-            0.0
+            0.28376,
+            1.20802,
+            0.01849
           ],
-          "yawDeg": 46.0,
+          "yawDeg": 30.0,
           "pitchDeg": 0.0,
           "distance": 0.97398,
           "framingRadius": 0.26846,
@@ -742,11 +742,11 @@
           "labelKo": "삼두",
           "labelEn": "Triceps",
           "target": [
-            0.17707,
-            1.17288,
-            0.0
+            0.28376,
+            1.20802,
+            0.01849
           ],
-          "yawDeg": 134.0,
+          "yawDeg": 150.0,
           "pitchDeg": 0.0,
           "distance": 0.96272,
           "framingRadius": 0.26536,
@@ -757,11 +757,11 @@
           "labelKo": "전완",
           "labelEn": "Forearms",
           "target": [
-            0.18575,
-            0.90315,
-            0.0
+            0.46879,
+            1.01678,
+            0.05917
           ],
-          "yawDeg": 46.0,
+          "yawDeg": 30.0,
           "pitchDeg": 0.0,
           "distance": 0.83751,
           "framingRadius": 0.23085,
@@ -817,8 +817,8 @@
           "labelKo": "허벅지 앞",
           "labelEn": "Quads",
           "target": [
-            0.07527,
-            0.6237,
+            0.0715,
+            0.66015,
             0.0
           ],
           "yawDeg": 26.0,
@@ -832,8 +832,8 @@
           "labelKo": "허벅지 뒤",
           "labelEn": "Hamstrings",
           "target": [
-            0.07527,
-            0.6237,
+            0.0715,
+            0.66015,
             0.0
           ],
           "yawDeg": 154.0,
@@ -847,7 +847,7 @@
           "labelKo": "종아리",
           "labelEn": "Calves",
           "target": [
-            0.07527,
+            0.06623,
             0.26244,
             0.0
           ],
@@ -860,8 +860,19 @@
       ],
       "focusFovDeg": 32.0,
       "stats": {
-        "vertices": 8558,
-        "triangles": 15896,
+        "boundsMin": [
+          -0.66834,
+          -0.0008,
+          -0.13217
+        ],
+        "boundsMax": [
+          0.66834,
+          1.62,
+          0.15915
+        ],
+        "measuredHeight": 1.6208,
+        "vertices": 9756,
+        "triangles": 18348,
         "joints": 23,
         "morphTargets": 16,
         "muscleGroups": 13
@@ -960,7 +971,7 @@
           "parent": "Neck",
           "rest": [
             0.0,
-            1.61623,
+            1.6234,
             0.0
           ],
           "humanoid": "head"
@@ -982,7 +993,7 @@
           "parent": "Shoulder_L",
           "rest": [
             0.20151,
-            1.4084,
+            1.41533,
             0.0
           ],
           "humanoid": "leftUpperArm"
@@ -992,9 +1003,9 @@
           "name": "Forearm_L",
           "parent": "UpperArm_L",
           "rest": [
-            0.21159,
-            1.1025,
-            0.0
+            0.43951,
+            1.19172,
+            0.03996
           ],
           "humanoid": "leftLowerArm"
         },
@@ -1003,9 +1014,9 @@
           "name": "Hand_L",
           "parent": "Forearm_L",
           "rest": [
-            0.21965,
-            0.84875,
-            0.0
+            0.60126,
+            1.00217,
+            0.08788
           ],
           "humanoid": "leftHand"
         },
@@ -1026,7 +1037,7 @@
           "parent": "Shoulder_R",
           "rest": [
             -0.20151,
-            1.4084,
+            1.41533,
             0.0
           ],
           "humanoid": "rightUpperArm"
@@ -1036,9 +1047,9 @@
           "name": "Forearm_R",
           "parent": "UpperArm_R",
           "rest": [
-            -0.21159,
-            1.1025,
-            0.0
+            -0.43951,
+            1.19172,
+            0.03996
           ],
           "humanoid": "rightLowerArm"
         },
@@ -1047,9 +1058,9 @@
           "name": "Hand_R",
           "parent": "Forearm_R",
           "rest": [
-            -0.21965,
-            0.84875,
-            0.0
+            -0.60126,
+            1.00217,
+            0.08788
           ],
           "humanoid": "rightHand"
         },
@@ -1059,7 +1070,7 @@
           "parent": "Hips",
           "rest": [
             0.08094,
-            0.84875,
+            0.9275,
             0.0
           ],
           "humanoid": "leftUpperLeg"
@@ -1069,7 +1080,7 @@
           "name": "Shin_L",
           "parent": "Thigh_L",
           "rest": [
-            0.07608,
+            0.07284,
             0.49875,
             0.0
           ],
@@ -1080,7 +1091,7 @@
           "name": "Foot_L",
           "parent": "Shin_L",
           "rest": [
-            0.07284,
+            0.06961,
             0.06825,
             0.0
           ],
@@ -1091,9 +1102,9 @@
           "name": "Toe_L",
           "parent": "Foot_L",
           "rest": [
-            0.07284,
+            0.06961,
             0.021,
-            0.1596
+            0.14896
           ],
           "humanoid": "leftToes"
         },
@@ -1103,7 +1114,7 @@
           "parent": "Hips",
           "rest": [
             -0.08094,
-            0.84875,
+            0.9275,
             0.0
           ],
           "humanoid": "rightUpperLeg"
@@ -1113,7 +1124,7 @@
           "name": "Shin_R",
           "parent": "Thigh_R",
           "rest": [
-            -0.07608,
+            -0.07284,
             0.49875,
             0.0
           ],
@@ -1124,7 +1135,7 @@
           "name": "Foot_R",
           "parent": "Shin_R",
           "rest": [
-            -0.07284,
+            -0.06961,
             0.06825,
             0.0
           ],
@@ -1135,9 +1146,9 @@
           "name": "Toe_R",
           "parent": "Foot_R",
           "rest": [
-            -0.07284,
+            -0.06961,
             0.021,
-            0.1596
+            0.14896
           ],
           "humanoid": "rightToes"
         }
@@ -1517,7 +1528,7 @@
           "labelEn": "Face",
           "target": [
             0.0,
-            1.61623,
+            1.6234,
             0.0
           ],
           "yawDeg": 0.0,
@@ -1591,11 +1602,11 @@
           "labelKo": "이두",
           "labelEn": "Biceps",
           "target": [
-            0.20554,
-            1.267,
-            0.0
+            0.32051,
+            1.30352,
+            0.01998
           ],
-          "yawDeg": 46.0,
+          "yawDeg": 30.0,
           "pitchDeg": 0.0,
           "distance": 1.06309,
           "framingRadius": 0.29303,
@@ -1606,11 +1617,11 @@
           "labelKo": "삼두",
           "labelEn": "Triceps",
           "target": [
-            0.20554,
-            1.267,
-            0.0
+            0.32051,
+            1.30352,
+            0.01998
           ],
-          "yawDeg": 134.0,
+          "yawDeg": 150.0,
           "pitchDeg": 0.0,
           "distance": 1.04867,
           "framingRadius": 0.28905,
@@ -1621,11 +1632,11 @@
           "labelKo": "전완",
           "labelEn": "Forearms",
           "target": [
-            0.21562,
-            0.97562,
-            0.0
+            0.52039,
+            1.09695,
+            0.06392
           ],
-          "yawDeg": 46.0,
+          "yawDeg": 30.0,
           "pitchDeg": 0.0,
           "distance": 0.91324,
           "framingRadius": 0.25172,
@@ -1681,8 +1692,8 @@
           "labelKo": "허벅지 앞",
           "labelEn": "Quads",
           "target": [
-            0.08094,
-            0.67375,
+            0.07689,
+            0.71313,
             0.0
           ],
           "yawDeg": 26.0,
@@ -1696,8 +1707,8 @@
           "labelKo": "허벅지 뒤",
           "labelEn": "Hamstrings",
           "target": [
-            0.08094,
-            0.67375,
+            0.07689,
+            0.71313,
             0.0
           ],
           "yawDeg": 154.0,
@@ -1711,7 +1722,7 @@
           "labelKo": "종아리",
           "labelEn": "Calves",
           "target": [
-            0.08094,
+            0.07122,
             0.2835,
             0.0
           ],
@@ -1724,8 +1735,19 @@
       ],
       "focusFovDeg": 32.0,
       "stats": {
-        "vertices": 8078,
-        "triangles": 15032,
+        "boundsMin": [
+          -0.73826,
+          -0.00086,
+          -0.1322
+        ],
+        "boundsMax": [
+          0.73826,
+          1.75,
+          0.17192
+        ],
+        "measuredHeight": 1.75086,
+        "vertices": 9276,
+        "triangles": 17484,
         "joints": 23,
         "morphTargets": 16,
         "muscleGroups": 13

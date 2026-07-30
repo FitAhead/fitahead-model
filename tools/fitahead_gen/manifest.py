@@ -59,15 +59,25 @@ def build_focus_views(p, rig, groups):
     """
     h = p.height
     sw = p.shoulder_half_w * h
-    hip_half = p.hip_rx * h * p.leg_stance
     head_y = rig.world("Head")[1]
-    arm_mid = (p.shoulder_y + p.elbow_y) * 0.5
-    forearm_mid = (p.elbow_y + p.wrist_y) * 0.5
-    thigh_mid = (p.crotch_y + p.knee_y) * 0.5
-    shin_mid = (p.knee_y + p.ankle_y) * 0.5
 
     def y(fraction):
         return fraction * h
+
+    def midpoint(a, b):
+        """Midpoint of a bone, taken from the rig.
+
+        Derived rather than computed from landmark heights, because the arms are
+        abducted: in an A-pose the middle of the humerus is neither at
+        `(shoulder_y + elbow_y) / 2` nor on the body's centre line.
+        """
+        pa, pb = rig.world(a), rig.world(b)
+        return tuple((pa[i] + pb[i]) * 0.5 for i in range(3))
+
+    upperarm_mid = midpoint("UpperArm_L", "Forearm_L")
+    forearm_mid = midpoint("Forearm_L", "Hand_L")
+    thigh_mid = midpoint("Thigh_L", "Shin_L")
+    shin_mid = midpoint("Shin_L", "Foot_L")
 
     def view(*args, **kwargs):
         return _view(*args, height=h, groups=groups, **kwargs)
@@ -93,14 +103,11 @@ def build_focus_views(p, rig, groups):
 
         # -- arms -----------------------------------------------------------
         view("biceps", "이두", "Biceps",
-             (sw * 1.02, y(arm_mid), 0.0), 0.150 * h,
-             yaw=46.0, morph="biceps"),
+             upperarm_mid, 0.150 * h, yaw=30.0, morph="biceps"),
         view("triceps", "삼두", "Triceps",
-             (sw * 1.02, y(arm_mid), 0.0), 0.150 * h,
-             yaw=134.0, morph="triceps"),
+             upperarm_mid, 0.150 * h, yaw=150.0, morph="triceps"),
         view("forearms", "전완", "Forearms",
-             (sw * 1.07, y(forearm_mid), 0.0), 0.130 * h,
-             yaw=46.0, morph="forearms"),
+             forearm_mid, 0.130 * h, yaw=30.0, morph="forearms"),
 
         # -- core -----------------------------------------------------------
         view("abs", "복근", "Abs",
@@ -115,14 +122,11 @@ def build_focus_views(p, rig, groups):
              (0.0, y(p.hip_y - 0.005), -0.018 * h), 0.205 * h,
              yaw=172.0, pitch=-8.0, morph="glutes"),
         view("quads", "허벅지 앞", "Quads",
-             (hip_half, y(thigh_mid), 0.0), 0.195 * h,
-             yaw=26.0, morph="quads"),
+             thigh_mid, 0.195 * h, yaw=26.0, morph="quads"),
         view("hams", "허벅지 뒤", "Hamstrings",
-             (hip_half, y(thigh_mid), 0.0), 0.195 * h,
-             yaw=154.0, morph="hams"),
+             thigh_mid, 0.195 * h, yaw=154.0, morph="hams"),
         view("calves", "종아리", "Calves",
-             (hip_half, y(shin_mid), 0.0), 0.155 * h,
-             yaw=154.0, morph="calves"),
+             shin_mid, 0.155 * h, yaw=154.0, morph="calves"),
     ]
 
 
