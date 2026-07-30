@@ -23,6 +23,7 @@ Displacement amounts come from `anthro` where a girth measurement exists, so a
 morph at weight 1.0 moves the surface by the real lean-to-trained difference.
 """
 
+import math
 from dataclasses import dataclass
 from typing import Callable
 
@@ -59,6 +60,7 @@ class MaskContext:
         self.rig = rig
         self.h = params.height
         self._segments = {}
+        self._frames = {}
 
     def yf(self, position):
         """Height of a vertex as a fraction of stature."""
@@ -98,6 +100,42 @@ class MaskContext:
         v = (self.yf(position) - lo) / (hi - lo)
         return u, v
 
+    def limb_frame(self, bone):
+        """(origin, axis, front, side) for a limb's cross-section plane.
+
+        `front` is +Z projected perpendicular to the bone, so an angle of 0 is
+        always the anterior surface no matter how the limb is posed. Without
+        this, angles measured in world axes would drift as soon as the arm was
+        abducted.
+        """
+        frame = self._frames.get(bone)
+        if frame is None:
+            start, end = self.rig.segment(bone)
+            axis = vm.normalize(vm.sub(end, start))
+            z = (0.0, 0.0, 1.0)
+            front = vm.normalize(vm.sub(z, vm.mul(axis, vm.dot(z, axis))))
+            side = vm.normalize(vm.cross(axis, front))
+            frame = (start, axis, front, side)
+            self._frames[bone] = frame
+        return frame
+
+    def limb_angle(self, part, position):
+        """Angle around the limb: 0 anterior, +90 lateral, 180 posterior.
+
+        Signed by side so `+90` is away from the midline on both arms and legs,
+        which lets one mask describe the vastus lateralis without a mirror case.
+        """
+        bone = self.limb_t(part)
+        origin, axis, front, side = self.limb_frame(bone)
+        radial = vm.sub(position, origin)
+        radial = vm.sub(radial, vm.mul(axis, vm.dot(radial, axis)))
+        return math.atan2(vm.dot(radial, side) * self.side_sign(part),
+                          vm.dot(radial, front))
+
+    def torso_angle(self, position):
+        """Angle around the torso: 0 anterior, +/-90 lateral, 180 posterior."""
+        return math.atan2(position[0], position[2])
+
     def lateral(self, position):
         """0 at the midline, 1 at the widest point of the shoulders."""
         return vm.clamp01(abs(position[0]) / (self.p.shoulder_half_w * self.h))
@@ -106,9 +144,17 @@ class MaskContext:
 # -- mask primitives --------------------------------------------------------
 
 def _band(y, lo, hi, feather=0.05):
-    """Smooth window over a height range."""
-    return vm.smoothstep(lo - feather, lo + feather * 0.5, y) * (
-        1.0 - vm.smoothstep(hi - feather * 0.5, hi + feather, y)
+    """Smooth window over a height range.
+
+    `feather` may be a `(lower, upper)` pair. Asymmetry matters: a muscle that
+    ends where another begins can fade slowly, but one that ends on open skin
+    must fade over a long distance or its edge becomes a cliff. The pectoralis
+    fading over 26 mm while displacing 46 mm produced a 45-degree step across the
+    chest, which read as a rectangular slot cut into the model.
+    """
+    lo_f, hi_f = feather if isinstance(feather, tuple) else (feather, feather)
+    return vm.smoothstep(lo - lo_f, lo + lo_f * 0.5, y) * (
+        1.0 - vm.smoothstep(hi - hi_f * 0.5, hi + hi_f, y)
     )
 
 
@@ -142,8 +188,114 @@ def _compartment(direction, bias):
     return (1.0 - bias) + bias * direction
 
 
+def _bump(x, center, half_width, fullness=1.6):
+    """Raised-cosine lobe: 1 at `center`, 0 at `center +/- half_width`.
+
+    Zero derivative at the edges, unlike the linear falloff this replaces — a
+    linear cone meets its surroundings at an angle and reads as a facet.
+    `fullness` > 1 flattens the top, which is what a muscle belly looks like.
+    """
+    d = abs(x - center) / max(half_width, 1e-9)
+    if d >= 1.0:
+        return 0.0
+    return (0.5 + 0.5 * math.cos(math.pi * d)) ** (1.0 / fullness)
+
+
+def _rim(x, center, half_width, rim_width):
+    """Lobe sitting just OUTSIDE `center +/- half_width`, peaking mid-rim.
+
+    This is the groove that makes a muscle read as a muscle. Anatomically it is
+    the intermuscular septum — the seam where one muscle meets the next. Volume
+    alone reads as swelling; all the definition comes from the boundary.
+    """
+    d = abs(x - center)
+    lo = half_width
+    hi = half_width + max(rim_width, 1e-9)
+    if d <= lo or d >= hi:
+        return 0.0
+    return math.sin(math.pi * (d - lo) / (hi - lo))
+
+
+def _rim_below(x, edge, width):
+    """Groove sitting just BELOW `edge`, zero at both ends.
+
+    A muscle's inferior border is a one-sided landmark: the inframammary line
+    under the pectoralis and the gluteal fold under the glutes read as a crease
+    below the muscle, with nothing matching it above.
+    """
+    if x >= edge or x <= edge - width:
+        return 0.0
+    return math.sin(math.pi * (x - (edge - width)) / width)
+
+
+def _torso_muscle(ctx, pos, y_range, angular, septum=0.17, fold=0.0,
+                  feather=0.045, mirror=False):
+    """Torso muscle: a belly bounded by a septum groove, optionally a fold below.
+
+    `angular` is `(centre_deg, half_deg)` around the torso, 0 anterior. When
+    `mirror` is set the centre is taken on |angle|, which is how one entry
+    describes both latissimus dorsi or both obliques.
+    """
+    y = ctx.yf(pos)
+    lo, hi = y_range
+    env = _band(y, lo, hi, feather)
+    if env <= 1e-4:
+        return 0.0
+    ang = ctx.torso_angle(pos)
+    if mirror:
+        ang = abs(ang)
+    g = _ang_bump(ang, angular[0], angular[1])
+    grooves = septum * _ang_rim(ang, angular[0], angular[1],
+                                angular[1] * 0.40) * env
+    if fold:
+        # Horizontal creases — the inframammary line, the gluteal fold — are OFF.
+        # Vertical ring spacing on the torso is about 8 mm, so a crease narrow
+        # enough to be one reads as a rectangular trench rather than a fold. This
+        # detail belongs in a normal map; the parameter stays so it can be turned
+        # back on if the torso ever gains UVs.
+        grooves += fold * _rim_below(y, lo + (hi - lo) * 0.12,
+                                    (hi - lo) * 0.26) * g
+    return env * g - grooves
+
+
+def _ang_delta(a, b):
+    """Shortest signed distance between two angles, in radians."""
+    d = (a - b) % (2.0 * math.pi)
+    return d - 2.0 * math.pi if d > math.pi else d
+
+
+def _ang_bump(angle, center_deg, half_deg, fullness=1.6):
+    return _bump(_ang_delta(angle, math.radians(center_deg)), 0.0,
+                 math.radians(half_deg), fullness)
+
+
+def _ang_rim(angle, center_deg, half_deg, rim_deg):
+    return _rim(_ang_delta(angle, math.radians(center_deg)), 0.0,
+                math.radians(half_deg), math.radians(rim_deg))
+
+
+def _muscle(t, angle, axial, angular, septum=0.17, tendon=0.10):
+    """A muscle belly bounded by grooves.
+
+    `axial` is `(centre, half_width)` along the bone and `angular` is
+    `(centre_deg, half_deg)` around it. The belly is their product; the septum
+    groove sits just outside the angular extent and the tendon groove just
+    outside the axial extent, both gated by the muscle actually being there so a
+    groove never floats on bare skin.
+    """
+    a = _bump(t, axial[0], axial[1])
+    g = _ang_bump(angle, angular[0], angular[1])
+    belly = a * g
+    if belly <= 0.0 and a <= 0.0:
+        return 0.0
+    grooves = (septum * _ang_rim(angle, angular[0], angular[1],
+                                 angular[1] * 0.42) * a
+               + tendon * _rim(t, axial[0], axial[1], axial[1] * 0.35) * g)
+    return belly - grooves
+
+
 def _peak(t, center, width, falloff=0.85):
-    """Bump centred at `center` along a bone, reaching 0 at +/- width."""
+    """Legacy linear lobe, kept for masks that want a plain gradient."""
     d = abs(t - center) / max(width, 1e-6)
     return vm.clamp01(1.0 - d) ** falloff
 
@@ -187,8 +339,13 @@ def _mask_delts(ctx, part, pos, nrm):
     and does not change, so a broader shoulder is entirely deltoid mass.
     """
     if part in UPPERARM_PARTS:
-        t = ctx.along(ctx.limb_t(part), pos)
-        return _peak(t, 0.10, 0.38) * (0.55 + 0.45 * _side(nrm))
+        # the lateral head caps the joint; grooves at the front and back are the
+        # pec-delt and delt-triceps seams, two of the most recognisable
+        # landmarks on a trained upper body
+        return _muscle(ctx.along(ctx.limb_t(part), pos),
+                       ctx.limb_angle(part, pos),
+                       axial=(0.09, 0.36), angular=(80.0, 70.0),
+                       septum=0.19, tendon=0.08)
     if part in ("shoulder_L", "shoulder_R"):
         return 1.0
     if part in TORSO_PARTS:
@@ -207,12 +364,17 @@ def _mask_pecs(ctx, part, pos, nrm):
     """
     if part not in TORSO_PARTS:
         return 0.0
-    p, y = ctx.p, ctx.yf(pos)
-    band = _band(y, p.chest_y - 0.048, p.shoulder_y - 0.012, feather=0.032)
-    lateral = ctx.lateral(pos)
-    # taper off past the outer edge of the sternum-to-humerus fan
-    fan = 1.0 - vm.smoothstep(0.62, 1.0, lateral)
-    return band * _compartment(_front(nrm, 1.35), 0.76) * fan
+    p = ctx.p
+    # TWO bellies, lateral to the sternum, with the sternal valley between
+    # them. A single belly centred on the midline is both anatomically wrong —
+    # the pectoralis originates ON the sternum, it does not cross it — and it
+    # is why the chest used to end in a cliff: 46 mm of displacement fading
+    # over 26 mm of height is a 45-degree step, and its shadow read as a
+    # rectangular slot cut into the chest. The lower edge now fades over 80 mm.
+    return _torso_muscle(ctx, pos,
+                         (p.chest_y - 0.030, p.shoulder_y - 0.004),
+                         angular=(36.0, 36.0), septum=0.12, fold=0.0,
+                         mirror=True, feather=(0.080, 0.028))
 
 
 def _mask_lats(ctx, part, pos, nrm):
@@ -225,20 +387,27 @@ def _mask_lats(ctx, part, pos, nrm):
     if part not in TORSO_PARTS:
         return 0.0
     p, y = ctx.p, ctx.yf(pos)
-    band = _band(y, p.waist_y + 0.012, p.shoulder_y - 0.015, feather=0.045)
-    # peak just below the chest line, where the lats are widest
-    height_profile = _peak((y - p.waist_y) / (p.shoulder_y - p.waist_y),
-                           0.55, 0.70)
-    directional = vm.clamp01(_back(nrm) * 0.70 + _side(nrm) * 0.72)
-    return band * height_profile * directional
+    # centred on the posterolateral wall, mirrored so one entry covers both
+    # sides; the anterior groove is the lat's leading border, visible from the
+    # side on anyone who trains their back
+    base = _torso_muscle(ctx, pos, (p.waist_y + 0.012, p.shoulder_y - 0.015),
+                         angular=(122.0, 54.0), septum=0.15, mirror=True,
+                         feather=(0.070, 0.040))
+    # widest across the MID back: the flare has to sit above a waist that does
+    # not move, or there is no V-taper, just a wider tube
+    height_profile = _bump((y - p.waist_y) / (p.shoulder_y - p.waist_y),
+                           0.55, 0.72)
+    return base * height_profile
 
 
 def _mask_biceps(ctx, part, pos, nrm):
     """Biceps brachii — anterior compartment, belly near mid-humerus."""
     if part not in UPPERARM_PARTS:
         return 0.0
-    t = ctx.along(ctx.limb_t(part), pos)
-    return _peak(t, 0.52, 0.46) * _compartment(_front(nrm, 1.15), 0.55)
+    return _muscle(ctx.along(ctx.limb_t(part), pos),
+                   ctx.limb_angle(part, pos),
+                   axial=(0.52, 0.44), angular=(0.0, 78.0),
+                   septum=0.18, tendon=0.11)
 
 
 def _mask_triceps(ctx, part, pos, nrm):
@@ -246,8 +415,10 @@ def _mask_triceps(ctx, part, pos, nrm):
     biceps because the long head runs up to the scapula."""
     if part not in UPPERARM_PARTS:
         return 0.0
-    t = ctx.along(ctx.limb_t(part), pos)
-    return _peak(t, 0.36, 0.50) * _compartment(_back(nrm, 1.15), 0.55)
+    return _muscle(ctx.along(ctx.limb_t(part), pos),
+                   ctx.limb_angle(part, pos),
+                   axial=(0.36, 0.46), angular=(180.0, 72.0),
+                   septum=0.18, tendon=0.10)
 
 
 def _mask_forearms(ctx, part, pos, nrm):
@@ -277,14 +448,17 @@ def _mask_abs(ctx, part, pos, nrm):
     if envelope <= 1e-4:
         return 0.0
 
-    # the paired straps, absent at the midline and past the linea semilunaris
-    strap = vm.smoothstep(0.70, 0.46, au) * vm.smoothstep(0.05, 0.17, au)
-    # linea alba: the midline groove between them
-    alba = -0.55 * (1.0 - vm.smoothstep(0.0, 0.13, au))
-    # three tendinous intersections; the lowest pair is the least defined
-    lines = -(0.50 * _ridge(v, 0.33, 0.075)
-              + 0.55 * _ridge(v, 0.56, 0.070)
-              + 0.45 * _ridge(v, 0.77, 0.065))
+    # The paired straps are narrow: rectus abdominis spans roughly the middle
+    # half of the abdominal wall, bounded medially by the linea alba and
+    # laterally by the linea semilunaris. Wider than that and the six-pack reads
+    # as corrugation across the whole belly.
+    strap = vm.smoothstep(0.56, 0.34, au) * vm.smoothstep(0.06, 0.15, au)
+    alba = -0.40 * (1.0 - vm.smoothstep(0.0, 0.11, au))
+    # three tendinous intersections, shallower than the midline so the straps
+    # still read as continuous columns rather than as stacked blocks
+    lines = -(0.34 * _ridge(v, 0.34, 0.115)
+              + 0.24 * _ridge(v, 0.57, 0.105)
+              + 0.17 * _ridge(v, 0.78, 0.095))
     return envelope * (strap + alba + lines * strap)
 
 
@@ -292,18 +466,22 @@ def _mask_obliques(ctx, part, pos, nrm):
     """External oblique — the flanks, angling down toward the pubis."""
     if part not in TORSO_PARTS:
         return 0.0
-    p, y = ctx.p, ctx.yf(pos)
-    band = _band(y, p.hip_y - 0.015, p.chest_y - 0.02, feather=0.04)
-    return band * _side(nrm) * (0.55 + 0.45 * _front(nrm))
+    p = ctx.p
+    return _torso_muscle(ctx, pos, (p.hip_y - 0.015, p.chest_y - 0.02),
+                         angular=(74.0, 42.0), septum=0.13, mirror=True,
+                         feather=0.040)
 
 
 def _mask_glutes(ctx, part, pos, nrm):
     """Gluteus maximus — posterior, peaking just below the trochanter line."""
     if part not in TORSO_PARTS:
         return 0.0
-    p, y = ctx.p, ctx.yf(pos)
-    band = _band(y, p.crotch_y - 0.015, p.hip_y + 0.032, feather=0.03)
-    return band * _compartment(_back(nrm, 1.15), 0.78)
+    p = ctx.p
+    # the fold below is the gluteal fold, the crease where the buttock meets the
+    # thigh — without it the glutes merge into the hamstrings
+    return _torso_muscle(ctx, pos, (p.crotch_y - 0.012, p.hip_y + 0.034),
+                         angular=(180.0, 82.0), septum=0.13, fold=0.0,
+                         feather=(0.030, 0.055))
 
 
 def _mask_quads(ctx, part, pos, nrm):
@@ -322,8 +500,10 @@ def _mask_hams(ctx, part, pos, nrm):
     """Hamstrings — posterior thigh, fullest at mid-length."""
     if part not in THIGH_PARTS:
         return 0.0
-    t = ctx.along(ctx.limb_t(part), pos)
-    return _peak(t, 0.48, 0.55) * _compartment(_back(nrm, 1.2), 0.60)
+    return _muscle(ctx.along(ctx.limb_t(part), pos),
+                   ctx.limb_angle(part, pos),
+                   axial=(0.48, 0.50), angular=(180.0, 68.0),
+                   septum=0.14, tendon=0.10)
 
 
 def _mask_calves(ctx, part, pos, nrm):
@@ -332,7 +512,14 @@ def _mask_calves(ctx, part, pos, nrm):
     if part not in SHIN_PARTS:
         return 0.0
     t = ctx.along(ctx.limb_t(part), pos)
-    return _peak(t, 0.28, 0.46) * _compartment(_back(nrm), 0.60)
+    angle = ctx.limb_angle(part, pos)
+    # two heads, split by a shallow groove down the midline of the calf; the
+    # medial head sits slightly lower, which is why the two are not symmetric
+    medial = _muscle(t, angle, axial=(0.30, 0.36), angular=(206.0, 46.0),
+                     septum=0.12, tendon=0.11)
+    lateral = _muscle(t, angle, axial=(0.25, 0.34), angular=(154.0, 44.0),
+                      septum=0.12, tendon=0.11) * 0.92
+    return medial + lateral
 
 
 def _mask_fat_android(ctx, part, pos, nrm):
@@ -392,35 +579,35 @@ def build_groups(p):
                    "전신", "Whole body", 0.0038, _mask_bulk, kind="composite"),
 
         MorphGroup("traps", "승모근", "Traps",
-                   "승모근 상부", "Upper trapezius", 0.0165, _mask_traps),
+                   "승모근 상부", "Upper trapezius", 0.0225, _mask_traps),
         MorphGroup("delts", "어깨", "Shoulders",
-                   "삼각근", "Deltoid", arm * 0.62, _mask_delts),
+                   "삼각근", "Deltoid", arm * 1.05, _mask_delts),
         MorphGroup("pecs", "가슴", "Chest",
-                   "대흉근", "Pectoralis major", 0.0180, _mask_pecs),
+                   "대흉근", "Pectoralis major", 0.0265, _mask_pecs),
         MorphGroup("lats", "등", "Back",
-                   "광배근", "Latissimus dorsi", 0.0140, _mask_lats),
+                   "광배근", "Latissimus dorsi", 0.0200, _mask_lats),
 
         MorphGroup("biceps", "이두", "Biceps",
-                   "상완이두근", "Biceps brachii", arm * 0.58, _mask_biceps),
+                   "상완이두근", "Biceps brachii", arm * 1.05, _mask_biceps),
         MorphGroup("triceps", "삼두", "Triceps",
-                   "상완삼두근", "Triceps brachii", arm * 0.46, _mask_triceps),
+                   "상완삼두근", "Triceps brachii", arm * 0.85, _mask_triceps),
         MorphGroup("forearms", "전완", "Forearms",
                    "완요골근·전완굴근", "Brachioradialis / flexors",
-                   fore * 0.62, _mask_forearms),
+                   fore * 0.74, _mask_forearms),
 
         MorphGroup("abs", "복근", "Abs",
-                   "복직근", "Rectus abdominis", 0.0120, _mask_abs),
+                   "복직근", "Rectus abdominis", 0.0150, _mask_abs),
         MorphGroup("obliques", "옆구리", "Obliques",
-                   "외복사근", "External oblique", 0.0080, _mask_obliques),
+                   "외복사근", "External oblique", 0.0110, _mask_obliques),
 
         MorphGroup("glutes", "엉덩이", "Glutes",
-                   "대둔근", "Gluteus maximus", 0.0200, _mask_glutes),
+                   "대둔근", "Gluteus maximus", 0.0285, _mask_glutes),
         MorphGroup("quads", "허벅지 앞", "Quads",
-                   "대퇴사두근", "Quadriceps femoris", thigh * 1.08, _mask_quads),
+                   "대퇴사두근", "Quadriceps femoris", thigh * 1.62, _mask_quads),
         MorphGroup("hams", "허벅지 뒤", "Hamstrings",
-                   "햄스트링", "Hamstrings", thigh * 0.86, _mask_hams),
+                   "햄스트링", "Hamstrings", thigh * 1.28, _mask_hams),
         MorphGroup("calves", "종아리", "Calves",
-                   "비복근", "Gastrocnemius", calf * 0.86, _mask_calves),
+                   "비복근", "Gastrocnemius", calf * 1.52, _mask_calves),
 
         MorphGroup("fat_android", "복부 체지방", "Abdominal fat",
                    "복부 지방", "Abdominal adipose", 0.0430,

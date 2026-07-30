@@ -26,13 +26,19 @@ def export_glb(character, path, face_png, humanoid_extension=True):
 
     # -- materials ---------------------------------------------------------
     p = character.p
-    face_tex = b.add_texture(face_png, name="FaceTexture")
-    materials = {
-        "skin": b.add_material("Skin", p.skin_color, roughness=0.78),
-        "face": b.add_material("Face", p.face_color, roughness=0.62,
-                               base_color_texture=face_tex),
-        "accent": b.add_material("Outfit", p.accent_color, roughness=0.55),
-    }
+    # only materials a group actually references: an unused material is a
+    # validator warning and dead payload
+    used = {g.material for g in character.groups}
+    materials = {}
+    if "skin" in used:
+        materials["skin"] = b.add_material("Skin", p.skin_color, roughness=0.78)
+    if "face" in used:
+        face_tex = b.add_texture(face_png, name="FaceTexture")
+        materials["face"] = b.add_material(
+            "Face", p.face_color, roughness=0.62, base_color_texture=face_tex)
+    if "accent" in used:
+        materials["accent"] = b.add_material(
+            "Outfit", p.accent_color, roughness=0.55)
 
     # -- meshes ------------------------------------------------------------
     mesh_names = []

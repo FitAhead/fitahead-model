@@ -12,8 +12,7 @@
       "frontAxis": "+Z",
       "meshes": [
         "Body",
-        "Face",
-        "Outfit"
+        "Face"
       ],
       "baseState": "lean",
       "face": {
@@ -321,7 +320,7 @@
           "labelEn": "Traps",
           "muscleKo": "승모근 상부",
           "muscleEn": "Upper trapezius",
-          "maxDisplacement": 0.02673
+          "maxDisplacement": 0.03645
         },
         {
           "index": 2,
@@ -331,7 +330,7 @@
           "labelEn": "Shoulders",
           "muscleKo": "삼각근",
           "muscleEn": "Deltoid",
-          "maxDisplacement": 0.00943
+          "maxDisplacement": 0.01597
         },
         {
           "index": 3,
@@ -341,7 +340,7 @@
           "labelEn": "Chest",
           "muscleKo": "대흉근",
           "muscleEn": "Pectoralis major",
-          "maxDisplacement": 0.02916
+          "maxDisplacement": 0.04293
         },
         {
           "index": 4,
@@ -351,7 +350,7 @@
           "labelEn": "Back",
           "muscleKo": "광배근",
           "muscleEn": "Latissimus dorsi",
-          "maxDisplacement": 0.02268
+          "maxDisplacement": 0.0324
         },
         {
           "index": 5,
@@ -361,7 +360,7 @@
           "labelEn": "Biceps",
           "muscleKo": "상완이두근",
           "muscleEn": "Biceps brachii",
-          "maxDisplacement": 0.00882
+          "maxDisplacement": 0.01597
         },
         {
           "index": 6,
@@ -371,7 +370,7 @@
           "labelEn": "Triceps",
           "muscleKo": "상완삼두근",
           "muscleEn": "Triceps brachii",
-          "maxDisplacement": 0.007
+          "maxDisplacement": 0.01293
         },
         {
           "index": 7,
@@ -381,7 +380,7 @@
           "labelEn": "Forearms",
           "muscleKo": "완요골근·전완굴근",
           "muscleEn": "Brachioradialis / flexors",
-          "maxDisplacement": 0.00575
+          "maxDisplacement": 0.00687
         },
         {
           "index": 8,
@@ -391,7 +390,7 @@
           "labelEn": "Abs",
           "muscleKo": "복직근",
           "muscleEn": "Rectus abdominis",
-          "maxDisplacement": 0.01944
+          "maxDisplacement": 0.0243
         },
         {
           "index": 9,
@@ -401,7 +400,7 @@
           "labelEn": "Obliques",
           "muscleKo": "외복사근",
           "muscleEn": "External oblique",
-          "maxDisplacement": 0.01296
+          "maxDisplacement": 0.01782
         },
         {
           "index": 10,
@@ -411,7 +410,7 @@
           "labelEn": "Glutes",
           "muscleKo": "대둔근",
           "muscleEn": "Gluteus maximus",
-          "maxDisplacement": 0.0324
+          "maxDisplacement": 0.04617
         },
         {
           "index": 11,
@@ -421,7 +420,7 @@
           "labelEn": "Quads",
           "muscleKo": "대퇴사두근",
           "muscleEn": "Quadriceps femoris",
-          "maxDisplacement": 0.02618
+          "maxDisplacement": 0.03926
         },
         {
           "index": 12,
@@ -431,7 +430,7 @@
           "labelEn": "Hamstrings",
           "muscleKo": "햄스트링",
           "muscleEn": "Hamstrings",
-          "maxDisplacement": 0.02084
+          "maxDisplacement": 0.03102
         },
         {
           "index": 13,
@@ -441,7 +440,7 @@
           "labelEn": "Calves",
           "muscleKo": "비복근",
           "muscleEn": "Gastrocnemius",
-          "maxDisplacement": 0.01175
+          "maxDisplacement": 0.02077
         },
         {
           "index": 14,
@@ -673,8 +672,8 @@
           ],
           "yawDeg": 18.0,
           "pitchDeg": 26.0,
-          "distance": 1.46644,
-          "framingRadius": 0.40421,
+          "distance": 1.52639,
+          "framingRadius": 0.42073,
           "morph": "traps"
         },
         {
@@ -688,8 +687,8 @@
           ],
           "yawDeg": 34.0,
           "pitchDeg": 12.0,
-          "distance": 1.27159,
-          "framingRadius": 0.3505,
+          "distance": 1.31194,
+          "framingRadius": 0.36162,
           "morph": "delts"
         },
         {
@@ -703,8 +702,8 @@
           ],
           "yawDeg": 0.0,
           "pitchDeg": 0.0,
-          "distance": 1.42266,
-          "framingRadius": 0.39214,
+          "distance": 1.50758,
+          "framingRadius": 0.41555,
           "morph": "pecs"
         },
         {
@@ -718,8 +717,8 @@
           ],
           "yawDeg": 180.0,
           "pitchDeg": 0.0,
-          "distance": 1.5884,
-          "framingRadius": 0.43782,
+          "distance": 1.64834,
+          "framingRadius": 0.45435,
           "morph": "lats"
         },
         {
@@ -733,8 +732,8 @@
           ],
           "yawDeg": 30.0,
           "pitchDeg": 0.0,
-          "distance": 0.97398,
-          "framingRadius": 0.26846,
+          "distance": 1.01807,
+          "framingRadius": 0.28062,
           "morph": "biceps"
         },
         {
@@ -748,8 +747,8 @@
           ],
           "yawDeg": 150.0,
           "pitchDeg": 0.0,
-          "distance": 0.96272,
-          "framingRadius": 0.26536,
+          "distance": 0.99931,
+          "framingRadius": 0.27545,
           "morph": "triceps"
         },
         {
@@ -763,8 +762,8 @@
           ],
           "yawDeg": 30.0,
           "pitchDeg": 0.0,
-          "distance": 0.83751,
-          "framingRadius": 0.23085,
+          "distance": 0.84438,
+          "framingRadius": 0.23274,
           "morph": "forearms"
         },
         {
@@ -778,8 +777,8 @@
           ],
           "yawDeg": 0.0,
           "pitchDeg": 0.0,
-          "distance": 1.24516,
-          "framingRadius": 0.34321,
+          "distance": 1.27514,
+          "framingRadius": 0.35148,
           "morph": "abs"
         },
         {
@@ -793,8 +792,8 @@
           ],
           "yawDeg": 68.0,
           "pitchDeg": 0.0,
-          "distance": 1.23458,
-          "framingRadius": 0.3403,
+          "distance": 1.26456,
+          "framingRadius": 0.34856,
           "morph": "obliques"
         },
         {
@@ -808,8 +807,8 @@
           ],
           "yawDeg": 172.0,
           "pitchDeg": -8.0,
-          "distance": 1.44264,
-          "framingRadius": 0.39765,
+          "distance": 1.52757,
+          "framingRadius": 0.42105,
           "morph": "glutes"
         },
         {
@@ -823,8 +822,8 @@
           ],
           "yawDeg": 26.0,
           "pitchDeg": 0.0,
-          "distance": 1.34547,
-          "framingRadius": 0.37086,
+          "distance": 1.42619,
+          "framingRadius": 0.39311,
           "morph": "quads"
         },
         {
@@ -838,8 +837,8 @@
           ],
           "yawDeg": 154.0,
           "pitchDeg": 0.0,
-          "distance": 1.31259,
-          "framingRadius": 0.3618,
+          "distance": 1.37537,
+          "framingRadius": 0.3791,
           "morph": "hams"
         },
         {
@@ -853,8 +852,8 @@
           ],
           "yawDeg": 154.0,
           "pitchDeg": 0.0,
-          "distance": 1.02143,
-          "framingRadius": 0.28154,
+          "distance": 1.07705,
+          "framingRadius": 0.29688,
           "morph": "calves"
         }
       ],
@@ -862,17 +861,17 @@
       "stats": {
         "boundsMin": [
           -0.66834,
-          -0.0008,
-          -0.13217
+          0.0002,
+          -0.12685
         ],
         "boundsMax": [
           0.66834,
           1.62,
           0.15915
         ],
-        "measuredHeight": 1.6208,
-        "vertices": 9756,
-        "triangles": 18348,
+        "measuredHeight": 1.6198,
+        "vertices": 7754,
+        "triangles": 14928,
         "joints": 23,
         "morphTargets": 16,
         "muscleGroups": 13
@@ -887,8 +886,7 @@
       "frontAxis": "+Z",
       "meshes": [
         "Body",
-        "Face",
-        "Outfit"
+        "Face"
       ],
       "baseState": "lean",
       "face": {
@@ -1196,7 +1194,7 @@
           "labelEn": "Traps",
           "muscleKo": "승모근 상부",
           "muscleEn": "Upper trapezius",
-          "maxDisplacement": 0.02888
+          "maxDisplacement": 0.03938
         },
         {
           "index": 2,
@@ -1206,7 +1204,7 @@
           "labelEn": "Shoulders",
           "muscleKo": "삼각근",
           "muscleEn": "Deltoid",
-          "maxDisplacement": 0.01209
+          "maxDisplacement": 0.02047
         },
         {
           "index": 3,
@@ -1216,7 +1214,7 @@
           "labelEn": "Chest",
           "muscleKo": "대흉근",
           "muscleEn": "Pectoralis major",
-          "maxDisplacement": 0.0315
+          "maxDisplacement": 0.04637
         },
         {
           "index": 4,
@@ -1226,7 +1224,7 @@
           "labelEn": "Back",
           "muscleKo": "광배근",
           "muscleEn": "Latissimus dorsi",
-          "maxDisplacement": 0.0245
+          "maxDisplacement": 0.035
         },
         {
           "index": 5,
@@ -1236,7 +1234,7 @@
           "labelEn": "Biceps",
           "muscleKo": "상완이두근",
           "muscleEn": "Biceps brachii",
-          "maxDisplacement": 0.01131
+          "maxDisplacement": 0.02047
         },
         {
           "index": 6,
@@ -1246,7 +1244,7 @@
           "labelEn": "Triceps",
           "muscleKo": "상완삼두근",
           "muscleEn": "Triceps brachii",
-          "maxDisplacement": 0.00897
+          "maxDisplacement": 0.01657
         },
         {
           "index": 7,
@@ -1256,7 +1254,7 @@
           "labelEn": "Forearms",
           "muscleKo": "완요골근·전완굴근",
           "muscleEn": "Brachioradialis / flexors",
-          "maxDisplacement": 0.0076
+          "maxDisplacement": 0.00907
         },
         {
           "index": 8,
@@ -1266,7 +1264,7 @@
           "labelEn": "Abs",
           "muscleKo": "복직근",
           "muscleEn": "Rectus abdominis",
-          "maxDisplacement": 0.021
+          "maxDisplacement": 0.02625
         },
         {
           "index": 9,
@@ -1276,7 +1274,7 @@
           "labelEn": "Obliques",
           "muscleKo": "외복사근",
           "muscleEn": "External oblique",
-          "maxDisplacement": 0.014
+          "maxDisplacement": 0.01925
         },
         {
           "index": 10,
@@ -1286,7 +1284,7 @@
           "labelEn": "Glutes",
           "muscleKo": "대둔근",
           "muscleEn": "Gluteus maximus",
-          "maxDisplacement": 0.035
+          "maxDisplacement": 0.04988
         },
         {
           "index": 11,
@@ -1296,7 +1294,7 @@
           "labelEn": "Quads",
           "muscleKo": "대퇴사두근",
           "muscleEn": "Quadriceps femoris",
-          "maxDisplacement": 0.03008
+          "maxDisplacement": 0.04512
         },
         {
           "index": 12,
@@ -1306,7 +1304,7 @@
           "labelEn": "Hamstrings",
           "muscleKo": "햄스트링",
           "muscleEn": "Hamstrings",
-          "maxDisplacement": 0.02395
+          "maxDisplacement": 0.03565
         },
         {
           "index": 13,
@@ -1316,7 +1314,7 @@
           "labelEn": "Calves",
           "muscleKo": "비복근",
           "muscleEn": "Gastrocnemius",
-          "maxDisplacement": 0.01365
+          "maxDisplacement": 0.02413
         },
         {
           "index": 14,
@@ -1548,8 +1546,8 @@
           ],
           "yawDeg": 18.0,
           "pitchDeg": 26.0,
-          "distance": 1.58412,
-          "framingRadius": 0.43664,
+          "distance": 1.64888,
+          "framingRadius": 0.45449,
           "morph": "traps"
         },
         {
@@ -1563,8 +1561,8 @@
           ],
           "yawDeg": 34.0,
           "pitchDeg": 12.0,
-          "distance": 1.38535,
-          "framingRadius": 0.38185,
+          "distance": 1.43706,
+          "framingRadius": 0.39611,
           "morph": "delts"
         },
         {
@@ -1578,8 +1576,8 @@
           ],
           "yawDeg": 0.0,
           "pitchDeg": 0.0,
-          "distance": 1.53682,
-          "framingRadius": 0.4236,
+          "distance": 1.62856,
+          "framingRadius": 0.44889,
           "morph": "pecs"
         },
         {
@@ -1593,8 +1591,8 @@
           ],
           "yawDeg": 180.0,
           "pitchDeg": 0.0,
-          "distance": 1.71586,
-          "framingRadius": 0.47296,
+          "distance": 1.78062,
+          "framingRadius": 0.4908,
           "morph": "lats"
         },
         {
@@ -1608,8 +1606,8 @@
           ],
           "yawDeg": 30.0,
           "pitchDeg": 0.0,
-          "distance": 1.06309,
-          "framingRadius": 0.29303,
+          "distance": 1.11961,
+          "framingRadius": 0.30861,
           "morph": "biceps"
         },
         {
@@ -1623,8 +1621,8 @@
           ],
           "yawDeg": 150.0,
           "pitchDeg": 0.0,
-          "distance": 1.04867,
-          "framingRadius": 0.28905,
+          "distance": 1.09556,
+          "framingRadius": 0.30198,
           "morph": "triceps"
         },
         {
@@ -1638,8 +1636,8 @@
           ],
           "yawDeg": 30.0,
           "pitchDeg": 0.0,
-          "distance": 0.91324,
-          "framingRadius": 0.25172,
+          "distance": 0.9223,
+          "framingRadius": 0.25422,
           "morph": "forearms"
         },
         {
@@ -1653,8 +1651,8 @@
           ],
           "yawDeg": 0.0,
           "pitchDeg": 0.0,
-          "distance": 1.34508,
-          "framingRadius": 0.37076,
+          "distance": 1.37746,
+          "framingRadius": 0.37968,
           "morph": "abs"
         },
         {
@@ -1668,8 +1666,8 @@
           ],
           "yawDeg": 68.0,
           "pitchDeg": 0.0,
-          "distance": 1.33365,
-          "framingRadius": 0.36761,
+          "distance": 1.36603,
+          "framingRadius": 0.37653,
           "morph": "obliques"
         },
         {
@@ -1683,8 +1681,8 @@
           ],
           "yawDeg": 172.0,
           "pitchDeg": -8.0,
-          "distance": 1.55841,
-          "framingRadius": 0.42955,
+          "distance": 1.65015,
+          "framingRadius": 0.45484,
           "morph": "glutes"
         },
         {
@@ -1698,8 +1696,8 @@
           ],
           "yawDeg": 26.0,
           "pitchDeg": 0.0,
-          "distance": 1.46457,
-          "framingRadius": 0.40369,
+          "distance": 1.55734,
+          "framingRadius": 0.42926,
           "morph": "quads"
         },
         {
@@ -1713,8 +1711,8 @@
           ],
           "yawDeg": 154.0,
           "pitchDeg": 0.0,
-          "distance": 1.42678,
-          "framingRadius": 0.39327,
+          "distance": 1.49893,
+          "framingRadius": 0.41316,
           "morph": "hams"
         },
         {
@@ -1728,8 +1726,8 @@
           ],
           "yawDeg": 154.0,
           "pitchDeg": 0.0,
-          "distance": 1.1093,
-          "framingRadius": 0.30577,
+          "distance": 1.17393,
+          "framingRadius": 0.32358,
           "morph": "calves"
         }
       ],
@@ -1737,17 +1735,17 @@
       "stats": {
         "boundsMin": [
           -0.73826,
-          -0.00086,
-          -0.1322
+          0.00021,
+          -0.12687
         ],
         "boundsMax": [
           0.73826,
           1.75,
           0.17192
         ],
-        "measuredHeight": 1.75086,
-        "vertices": 9276,
-        "triangles": 17484,
+        "measuredHeight": 1.74979,
+        "vertices": 7754,
+        "triangles": 14928,
         "joints": 23,
         "morphTargets": 16,
         "muscleGroups": 13

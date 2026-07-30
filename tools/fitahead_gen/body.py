@@ -38,6 +38,20 @@ PROFILE_SHIN = [(0.0, 0.95), (0.16, 0.95), (0.36, 0.99), (0.68, 0.86),
 #: The hand is a flat paddle that follows the forearm.
 PROFILE_HAND = [(0.0, 0.80), (0.22, 1.00), (0.70, 1.00), (1.0, 0.72)]
 
+#: How far the thigh tube reaches ABOVE the hip joint, as a fraction of stature.
+#: The tube is buried inside the pelvis so its top never becomes a visible
+#: surface; what shows is the line where the thigh emerges from the hip, which is
+#: the inguinal (groin) fold. Capping the thigh at the hip joint instead left a
+#: sphere intersecting the torso and the other thigh, and the resulting shelf was
+#: the ugliest thing on the model once the shorts stopped hiding it.
+THIGH_OVERLAP = 0.058
+
+
+def _shift_profile(profile, t0, head_value):
+    """Remap a 0..1 profile into t0..1, holding `head_value` before t0."""
+    return ([(0.0, head_value)]
+            + [(t0 + t * (1.0 - t0), v) for t, v in profile])
+
 
 class MeshGroup:
     """One mesh + material pairing that becomes a glTF mesh node."""
@@ -85,14 +99,9 @@ class Character:
         )
         face.compute_normals()
 
-        outfit = geom.MeshData("Outfit")
-        self._build_outfit(outfit)
-        outfit.compute_normals()
-
         self.groups = [
             MeshGroup(body, "skin"),
             MeshGroup(face, "face", morphable=False, textured=True),
-            MeshGroup(outfit, "accent"),
         ]
 
         ctx = morphs.MaskContext(p, rig)
@@ -125,7 +134,7 @@ class Character:
         return [
             # the bottom sits high enough that the thigh caps cover it; a lower
             # bottom shows its end cap through the gap between the legs
-            (p.crotch_y - 0.006, p.hip_rx * 0.80, p.hip_rz, 0.76, 0.94),
+            (p.crotch_y + 0.030, p.hip_rx * 0.54, p.hip_rz * 0.86, 0.74, 0.92),
             (p.crotch_y + 0.022, p.hip_rx * 0.95, p.hip_rz, 0.86, 1.16),
             (p.hip_y, p.hip_rx, p.hip_rz, 0.90, 1.12),
             (p.hip_y + 0.038, p.hip_rx * 0.93, p.hip_rz * 0.96, 0.98, 0.96),
@@ -205,19 +214,18 @@ class Character:
         # sphere: a standalone ball leaves a crease where it meets the tube, and
         # the crease is exactly where the delts morph swells. The cap radius is
         # generous enough to overlap the torso, so the joint reads as continuous.
+        # One tube through shoulder, elbow and wrist: the elbow ring is shared,
+        # so there is no seam there at all.
         elbow_r = p.forearm_r * h * 1.02
-        geom.tube(mesh, upper, elbow,
-                  p.upperarm_r * h, elbow_r,
-                  f"upperarm_{side}", segments=SEGMENTS_LIMB, slices=14,
-                  profile=PROFILE_UPPERARM,
-                  cap_start=False, cap_end=False,
-                  round_start=p.upperarm_r * h * 1.30)
-        # matching radii across the elbow keep the two tubes seamless
-        geom.tube(mesh, elbow, wrist,
-                  elbow_r, p.wrist_r * h * 1.10,
-                  f"forearm_{side}", segments=SEGMENTS_LIMB, slices=12,
-                  profile=PROFILE_FOREARM,
-                  cap_start=False, cap_end=False)
+        geom.polytube(
+            mesh,
+            [(upper, p.upperarm_r * h), (elbow, elbow_r),
+             (wrist, p.wrist_r * h * 1.10)],
+            [f"upperarm_{side}", f"forearm_{side}"],
+            profiles=[PROFILE_UPPERARM, PROFILE_FOREARM],
+            segments=SEGMENTS_LIMB, slices=13,
+            cap_start=False, cap_end=False,
+            round_start=p.upperarm_r * h * 1.30)
 
         # A mitten built ALONG the forearm, not a world-axis-aligned ellipsoid.
         # With the arm abducted 47 degrees, a sphere scaled on world Y elongates
@@ -258,20 +266,20 @@ class Character:
         toe = rig.world(f"Toe_{side}")
 
         knee_r = p.shin_r * h * 1.10
-        # the thigh's start cap reaches up over the crotch and hides where the
-        # torso loft is capped off
-        geom.tube(mesh, hip, knee,
-                  p.thigh_r * h, knee_r,
-                  f"thigh_{side}", segments=SEGMENTS_LIMB, slices=14,
-                  profile=PROFILE_THIGH,
-                  cap_end=False,
-                  round_start=p.thigh_r * h * geom.profile_at(PROFILE_THIGH, 0.0)
-                  * 0.85)
-        geom.tube(mesh, knee, ankle,
-                  knee_r, p.ankle_r * h * 1.15,
-                  f"shin_{side}", segments=SEGMENTS_LIMB, slices=14,
-                  profile=PROFILE_SHIN,
-                  cap_start=False, cap_end=False)
+        leg_dir = vm.normalize(vm.sub(knee, hip))
+        thigh_len = vm.length(vm.sub(knee, hip))
+        over = THIGH_OVERLAP * h
+        top = vm.add(hip, vm.mul(leg_dir, -over))
+        t0 = over / (thigh_len + over)
+        # one tube through hip, knee and ankle — shared knee ring, no seam
+        geom.polytube(
+            mesh,
+            [(top, p.thigh_r * h), (knee, knee_r),
+             (ankle, p.ankle_r * h * 1.15)],
+            [f"thigh_{side}", f"shin_{side}"],
+            profiles=[_shift_profile(PROFILE_THIGH, t0, 1.22), PROFILE_SHIN],
+            segments=SEGMENTS_LIMB, slices=15,
+            cap_start=True, cap_end=False)
         # The foot starts BEHIND the ankle so the character has a heel. Running
         # it from the ankle joint forward left the leg balanced on the front of
         # its own ankle, which is a large part of why the figure looked unstable.
@@ -282,63 +290,18 @@ class Character:
                   round_start=r_heel * 0.42,
                   round_end=r_tip * 0.80)
 
-    def _build_outfit(self, mesh):
-        """Shorts for everyone, plus a crop top on the female preset.
-
-        The outfit is a shell offset from the body and tagged with the same part
-        names, so it inherits the body's skin weights and morph masks and grows
-        with whatever is underneath it.
-        """
-        p, rig, h = self.p, self.rig, self.p.height
-        pad = 1.042
-
-        # the waistband sits ON the hip, below where the abdominal fat morph
-        # starts: any higher and the shorts inflate with the belly and read as a
-        # nappy rather than as athletic shorts. Both ends stay open — a capped
-        # waistband shows a disc floating between the legs.
-        geom.loft(
-            mesh,
-            [r for r in self._torso_rings(scale=pad)
-             if p.crotch_y + 0.012 <= r["y"] <= p.hip_y + 0.014],
-            "torso", segments=SEGMENTS_TORSO, cap_start=False, cap_end=False,
-        )
-
-        for side in ("L", "R"):
-            hip = rig.world(f"Thigh_{side}")
-            knee = rig.world(f"Shin_{side}")
-            leg_dir = vm.normalize(vm.sub(knee, hip))
-            thigh_len = vm.length(vm.sub(knee, hip))
-            # Placed as a fraction ALONG THE THIGH, starting just above the
-            # femoral head so it tucks inside the waistband. Offsets relative to
-            # the old crotch-rooted hip sent the cuff up past the waistband and
-            # left a hole between the two.
-            geom.tube(mesh,
-                      vm.add(hip, vm.mul(leg_dir, -thigh_len * 0.03)),
-                      vm.add(hip, vm.mul(leg_dir, thigh_len * 0.50)),
-                      p.thigh_r * h * pad * geom.profile_at(PROFILE_THIGH, 0.0),
-                      p.thigh_r * h * pad * geom.profile_at(PROFILE_THIGH, 0.50),
-                      f"thigh_{side}", segments=SEGMENTS_LIMB, slices=6,
-                      cap_start=False, cap_end=False)
-
-            # trainers: a shell over the foot, which also stops the bare foot
-            # from reading as a pale detached blob at the end of the leg
-            ankle = rig.world(f"Foot_{side}")
-            toe = rig.world(f"Toe_{side}")
-            heel, tip, r_heel, r_tip = self._foot_axis(ankle, toe)
-            geom.tube(mesh, heel, tip, r_heel * pad, r_tip * pad,
-                      f"foot_{side}", segments=SEGMENTS_LIMB, slices=7,
-                      aspect=FOOT_ASPECT,
-                      round_start=r_heel * 0.42,
-                      round_end=r_tip * 0.80)
-
-        if p.tags.get("sex") == "female":
-            geom.loft(
-                mesh,
-                [r for r in self._torso_rings(scale=pad)
-                 if p.chest_y - 0.058 <= r["y"] <= p.shoulder_y - 0.022],
-                "torso", segments=SEGMENTS_TORSO, cap_start=False,
-                cap_end=False,
-            )
+    # Clothing is deliberately absent.
+    #
+    # The shorts used to be two separate shells — a waistband loft over the hips
+    # plus a tube down each thigh — and two shells that merely overlap can never
+    # meet cleanly. Every version left either a ledge where the hem crossed the
+    # cuff or a hole between them, and morphs made it worse: the waistband
+    # inflated with the abdominal fat shape and read as a nappy.
+    #
+    # A garment needs to be ONE continuous surface: a waistband that splits into
+    # two legs, with its own topology. That is real work and it is not what makes
+    # this character useful, so the figure is a bare anatomical mannequin for now
+    # — which is also what every anatomy reference is. See docs for the plan.
 
     # -- skinning ----------------------------------------------------------
 
@@ -444,7 +407,8 @@ class Character:
                                       "normals": zeros, "touched": 0})
                 continue
 
-            morphed_normals = geom.compute_normals_for(positions, mesh.indices)
+            morphed_normals = geom.weld_normals(
+                positions, geom.compute_normals_for(positions, mesh.indices))
             normal_deltas = [vm.sub(morphed_normals[i], mesh.normals[i])
                              for i in range(mesh.vertex_count)]
             group.targets.append({"name": grp.name, "positions": deltas,

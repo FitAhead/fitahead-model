@@ -64,8 +64,35 @@ class MeshData:
         else:
             self.indices.extend((a, c, d))
 
-    def compute_normals(self):
+    def compute_normals(self, weld=True):
         self.normals = compute_normals_for(self.positions, self.indices)
+        if weld:
+            self.normals = weld_normals(self.positions, self.normals)
+
+
+def weld_normals(positions, normals, tolerance=2e-4):
+    """Average normals across coincident vertices.
+
+    Limb tubes are built as separate lofts that meet at shared positions but not
+    shared indices, so each side of a seam gets normals from its own triangles
+    only. The result is a hard shading line ringing every knee, elbow and hip
+    even when the two radii match exactly.
+
+    Welding for SHADING only: indices and positions are untouched, so the
+    topology the morph targets are baked against does not change.
+    """
+    canonical = {}
+    remap = []
+    for i, pos in enumerate(positions):
+        key = (round(pos[0] / tolerance), round(pos[1] / tolerance),
+               round(pos[2] / tolerance))
+        remap.append(canonical.setdefault(key, i))
+
+    acc = {}
+    for i, n in enumerate(normals):
+        c = remap[i]
+        acc[c] = vm.add(acc.get(c, (0.0, 0.0, 0.0)), n)
+    return [vm.normalize(acc[remap[i]]) for i in range(len(positions))]
 
 
 def compute_normals_for(positions, indices):
@@ -109,8 +136,9 @@ def loft(mesh, rings, part, segments=24, cap_start=False, cap_end=False):
     ring plane and default to world X/Z, so a vertical stack of rings (the torso)
     needs no axis bookkeeping.
     """
+    parts = part if isinstance(part, list) else [part] * len(rings)
     ring_indices = []
-    for ring in rings:
+    for ring, ring_part in zip(rings, parts):
         center = ring["center"]
         rx, rz = ring["rx"], ring["rz"]
         rz_front = ring.get("rz_front", rz)
@@ -123,7 +151,7 @@ def loft(mesh, rings, part, segments=24, cap_start=False, cap_end=False):
             angle = 2.0 * math.pi * s / segments
             ex, ez = _ellipse_point(angle, rx, rz_front, rz_back, squash)
             p = vm.add(center, vm.add(vm.mul(right, ex), vm.mul(forward, ez)))
-            row.append(mesh.add_vertex(p, (0.0, 0.0), part))
+            row.append(mesh.add_vertex(p, (0.0, 0.0), ring_part))
         ring_indices.append(row)
 
     for i in range(len(ring_indices) - 1):
@@ -134,9 +162,11 @@ def loft(mesh, rings, part, segments=24, cap_start=False, cap_end=False):
             mesh.add_quad_facing(lo[s], lo[n], hi[n], hi[s], axis_ref)
 
     if cap_start:
-        _cap(mesh, ring_indices[0], rings[0]["center"], rings[1]["center"], part)
+        _cap(mesh, ring_indices[0], rings[0]["center"], rings[1]["center"],
+             parts[0])
     if cap_end:
-        _cap(mesh, ring_indices[-1], rings[-1]["center"], rings[-2]["center"], part)
+        _cap(mesh, ring_indices[-1], rings[-1]["center"], rings[-2]["center"],
+             parts[-1])
     return ring_indices
 
 
@@ -226,6 +256,86 @@ def _hemisphere_rings(apex_center, axis, right, up, radius, extent, slices,
                       "rz": max(r * aspect, 1e-4),
                       "right": right, "forward": up})
     return rings
+
+
+def polytube(mesh, nodes, part, profiles=None, segments=20, slices=8,
+             aspect=1.0, aspect_x=1.0, cap_start=True, cap_end=True,
+             round_start=0.0, round_end=0.0):
+    """A tube through a polyline, SHARING the ring at every corner.
+
+    Two separate tubes meeting at a joint cannot be welded: their rings are
+    perpendicular to different axes, so the vertices land a fraction of a
+    millimetre apart and each side keeps its own normals. That is the hard line
+    ringing every knee and elbow. Here the corner ring exists once, lies in the
+    plane bisecting the two segments, and is shared — so there is no seam to
+    smooth in the first place.
+
+    `nodes` is a list of `(point, radius)`; `profiles` is one radius profile per
+    segment, applied over that segment's linear taper.
+    """
+    assert len(nodes) >= 2
+    profiles = profiles or [None] * (len(nodes) - 1)
+    points = [n[0] for n in nodes]
+    dirs = [vm.normalize(vm.sub(points[i + 1], points[i]))
+            for i in range(len(points) - 1)]
+
+    def plane_at(index):
+        """Ring plane normal: segment direction at the ends, bisector inside."""
+        if index == 0:
+            return dirs[0]
+        if index == len(points) - 1:
+            return dirs[-1]
+        return vm.normalize(vm.add(dirs[index - 1], dirs[index]))
+
+    # A single reference vector, parallel-transported, keeps consecutive rings
+    # rotationally aligned; deriving each frame independently twists the tube.
+    ref = (0.0, 0.0, 1.0)
+
+    def frame(normal):
+        right = vm.cross(ref, normal)
+        if vm.length(right) < 1e-6:
+            right = vm.cross((1.0, 0.0, 0.0), normal)
+        right = vm.normalize(right)
+        return right, vm.normalize(vm.cross(normal, right))
+
+    seg_parts = part if isinstance(part, list) else [part] * (len(points) - 1)
+    rings, ring_parts = [], []
+    if round_start > 0.0:
+        right, up = frame(dirs[0])
+        caps = _hemisphere_rings(points[0], dirs[0], right, up,
+                                 nodes[0][1], round_start, slices=4,
+                                 invert=True, aspect=aspect, aspect_x=aspect_x)
+        rings.extend(caps)
+        ring_parts.extend([seg_parts[0]] * len(caps))
+
+    for seg in range(len(points) - 1):
+        r0, r1 = nodes[seg][1], nodes[seg + 1][1]
+        n0, n1 = plane_at(seg), plane_at(seg + 1)
+        # the first ring of a later segment is the previous segment's last ring
+        first = 1 if seg > 0 else 0
+        for i in range(first, slices + 1):
+            t = i / slices
+            r = (r0 + (r1 - r0) * t) * profile_at(profiles[seg], t)
+            normal = vm.normalize(vm.lerp(n0, n1, t))
+            right, up = frame(normal)
+            rings.append({
+                "center": vm.lerp(points[seg], points[seg + 1], t),
+                "rx": r * aspect_x, "rz": r * aspect,
+                "right": right, "forward": up,
+            })
+            ring_parts.append(seg_parts[seg])
+
+    if round_end > 0.0:
+        right, up = frame(dirs[-1])
+        caps = _hemisphere_rings(points[-1], dirs[-1], right, up,
+                                 nodes[-1][1], round_end, slices=4,
+                                 invert=False, aspect=aspect, aspect_x=aspect_x)
+        rings.extend(caps)
+        ring_parts.extend([seg_parts[-1]] * len(caps))
+
+    return loft(mesh, rings, ring_parts, segments=segments,
+                cap_start=cap_start and round_start <= 0.0,
+                cap_end=cap_end and round_end <= 0.0)
 
 
 def sphere(mesh, center, radius, part, segments=28, rings=20,

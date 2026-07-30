@@ -75,18 +75,32 @@ def ring_perimeter(character, positions, parts, bone_t, bone):
     bone_len = vm.length(vm.sub(end, start))
     target = bone_t * bone_len
 
-    buckets = {}
-    for i in range(body.vertex_count):
-        if body.parts[i] not in parts:
-            continue
-        along = vm.dot(vm.sub(body.positions[i], start), axis)
-        buckets.setdefault(round(along * 2000), []).append((i, along))
-    rings = [r for r in buckets.values() if len(r) >= 3]
+    # Cluster by GAP rather than by fixed bucket width. A polytube's rings tilt
+    # toward the bisecting plane near a corner, so one ring can span several
+    # millimetres along the bone; fixed 0.5 mm buckets split it into fragments and
+    # reported an upper arm of 5 cm. Ring spacing is ~2 cm, so any gap above a few
+    # millimetres is a ring boundary.
+    samples = sorted(
+        ((vm.dot(vm.sub(body.positions[i], start), axis), i)
+         for i in range(body.vertex_count) if body.parts[i] in parts),
+        key=lambda pair: pair[0],
+    )
+    if len(samples) < 3:
+        return None
+    gap = 0.008
+    rings, current = [], [samples[0]]
+    for prev, cur in zip(samples, samples[1:]):
+        if cur[0] - prev[0] > gap:
+            rings.append(current)
+            current = []
+        current.append(cur)
+    rings.append(current)
+    rings = [r for r in rings if len(r) >= 3]
     if not rings:
         return None
     chosen = min(rings, key=lambda r: abs(
-        sum(a for _, a in r) / len(r) - target))
-    ring = [i for i, _ in chosen]
+        sum(a for a, _ in r) / len(r) - target))
+    ring = [i for _, i in chosen]
 
     # order around the ring in its own plane, then sum true 3D edge lengths
     centre = (sum(positions[i][0] for i in ring) / len(ring),
