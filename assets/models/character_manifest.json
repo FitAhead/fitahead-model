@@ -860,18 +860,18 @@
       "focusFovDeg": 32.0,
       "stats": {
         "boundsMin": [
-          -0.66834,
+          -0.6598,
           0.0002,
           -0.12685
         ],
         "boundsMax": [
-          0.66834,
+          0.6598,
           1.62,
           0.15915
         ],
         "measuredHeight": 1.6198,
-        "vertices": 7754,
-        "triangles": 14928,
+        "vertices": 8210,
+        "triangles": 15788,
         "joints": 23,
         "morphTargets": 16,
         "muscleGroups": 13
@@ -886,7 +886,8 @@
       "frontAxis": "+Z",
       "meshes": [
         "Body",
-        "Face"
+        "Face",
+        "Shorts"
       ],
       "baseState": "lean",
       "face": {
@@ -1734,18 +1735,18 @@
       "focusFovDeg": 32.0,
       "stats": {
         "boundsMin": [
-          -0.73826,
+          -0.7277,
           0.00021,
-          -0.12687
+          -0.14606
         ],
         "boundsMax": [
-          0.73826,
+          0.7277,
           1.75,
           0.17192
         ],
         "measuredHeight": 1.74979,
-        "vertices": 7754,
-        "triangles": 14928,
+        "vertices": 12838,
+        "triangles": 25040,
         "joints": 23,
         "morphTargets": 16,
         "muscleGroups": 13

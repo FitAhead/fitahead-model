@@ -2,8 +2,8 @@
 
 import math
 
-from . import geom, morphs, vecmath as vm
-from .rig import PART_BONES, build_rig
+from . import deform, geom, hand, morphs, outfit, vecmath as vm
+from .rig import build_rig
 
 #: The torso carries abdominal definition, which needs enough resolution to
 #: resolve two rectus straps and the transverse lines between them. Below about
@@ -35,9 +35,6 @@ PROFILE_THIGH = [(0.0, 0.95), (0.18, 1.04), (0.50, 1.00), (0.86, 0.96),
 #: than either alone.
 PROFILE_SHIN = [(0.0, 0.95), (0.16, 0.95), (0.36, 0.99), (0.68, 0.86),
                 (1.0, 1.00)]
-#: The hand is a flat paddle that follows the forearm.
-PROFILE_HAND = [(0.0, 0.80), (0.22, 1.00), (0.70, 1.00), (1.0, 0.72)]
-
 #: How far the thigh tube reaches ABOVE the hip joint, as a fraction of stature.
 #: The tube is buried inside the pelvis so its top never becomes a visible
 #: surface; what shows is the line where the thigh emerges from the hip, which is
@@ -103,12 +100,14 @@ class Character:
             MeshGroup(body, "skin"),
             MeshGroup(face, "face", morphable=False, textured=True),
         ]
+        if p.sex == "male":
+            self.groups.append(MeshGroup(outfit.build_shorts(p, rig), "accent"))
 
         ctx = morphs.MaskContext(p, rig)
         for group in self.groups:
-            self._skin(group)
+            deform.skin(self, group)
             if group.morphable:
-                self._bake_morphs(group, ctx)
+                deform.bake_morphs(self, group, ctx)
 
     def _upper_chest_y(self):
         p = self.p
@@ -227,17 +226,7 @@ class Character:
             cap_start=False, cap_end=False,
             round_start=p.upperarm_r * h * 1.30)
 
-        # A mitten built ALONG the forearm, not a world-axis-aligned ellipsoid.
-        # With the arm abducted 47 degrees, a sphere scaled on world Y elongates
-        # vertically while the arm points diagonally — the hand ended up
-        # crossing its own wrist.
-        arm_dir = vm.normalize(vm.sub(wrist, elbow))
-        hand_tip = vm.add(wrist, vm.mul(arm_dir, p.hand_len * h * 0.88))
-        geom.tube(mesh, wrist, hand_tip,
-                  p.wrist_r * h * 1.55, p.wrist_r * h * 1.35,
-                  f"hand_{side}", segments=SEGMENTS_LIMB, slices=7,
-                  profile=PROFILE_HAND, aspect_x=0.46,
-                  cap_start=False, round_end=p.wrist_r * h * 0.9)
+        hand.build(mesh, p, rig, side)
 
     def _foot_axis(self, ankle, toe):
         """Heel and toe-tip of a foot whose SOLE lies flat on y = 0.
@@ -289,130 +278,6 @@ class Character:
                   aspect=FOOT_ASPECT,
                   round_start=r_heel * 0.42,
                   round_end=r_tip * 0.80)
-
-    # Clothing is deliberately absent.
-    #
-    # The shorts used to be two separate shells — a waistband loft over the hips
-    # plus a tube down each thigh — and two shells that merely overlap can never
-    # meet cleanly. Every version left either a ledge where the hem crossed the
-    # cuff or a hole between them, and morphs made it worse: the waistband
-    # inflated with the abdominal fat shape and read as a nappy.
-    #
-    # A garment needs to be ONE continuous surface: a waistband that splits into
-    # two legs, with its own topology. That is real work and it is not what makes
-    # this character useful, so the figure is a bare anatomical mannequin for now
-    # — which is also what every anatomy reference is. See docs for the plan.
-
-    # -- skinning ----------------------------------------------------------
-
-    def _skin(self, group):
-        rig = self.rig
-        mesh = group.mesh
-        for i in range(mesh.vertex_count):
-            part = mesh.parts[i]
-            pos = mesh.positions[i]
-            if part == "torso":
-                pairs = self._torso_weights(pos)
-            else:
-                primary, parent = PART_BONES.get(part, ("Hips", "Hips"))
-                if primary == parent:
-                    pairs = [(primary, 1.0)]
-                else:
-                    t = vm.clamp01(
-                        vm.dist_point_segment(pos, *rig.segment(primary))[1]
-                    )
-                    blend = vm.smoothstep(0.0, 0.32, t)
-                    pairs = [(primary, blend), (parent, 1.0 - blend)]
-            joints, weights = self._pack_influences(pairs)
-            group.joints.append(joints)
-            group.weights.append(weights)
-
-    def _torso_weights(self, pos):
-        """Blend the spine chain by height.
-
-        Anchors are the joint heights themselves, so a vertex level with a joint
-        is fully owned by it and vertices between two joints share them. Only two
-        influences are ever non-zero, which keeps the deformation predictable.
-        """
-        p = self.p
-        y = pos[1] / p.height
-        anchors = [
-            ("Hips", p.hip_y),
-            ("Spine", p.waist_y),
-            ("Chest", p.chest_y),
-            ("UpperChest", self._upper_chest_y()),
-        ]
-        if y <= anchors[0][1]:
-            return [(anchors[0][0], 1.0)]
-        if y >= anchors[-1][1]:
-            return [(anchors[-1][0], 1.0)]
-        for (lo_name, lo_y), (hi_name, hi_y) in zip(anchors, anchors[1:]):
-            if lo_y <= y <= hi_y:
-                t = (y - lo_y) / max(hi_y - lo_y, 1e-9)
-                # smoothstep rather than linear: a linear blend creases visibly
-                # at the anchor heights when the spine bends
-                t = t * t * (3.0 - 2.0 * t)
-                return [(lo_name, 1.0 - t), (hi_name, t)]
-        return [(anchors[-1][0], 1.0)]
-
-    def _pack_influences(self, pairs):
-        """Normalise (bone, weight) pairs into the fixed 4-wide glTF layout.
-
-        Joint slots whose weight rounds to zero are forced to index 0: the spec
-        treats a non-zero joint index paired with a zero weight as a validation
-        warning, and some runtimes still count it against the 4-influence budget.
-        """
-        kept = [(self.rig.by_name[n].index, max(0.0, w))
-                for n, w in pairs if w > 1e-6]
-        kept.sort(key=lambda iw: -iw[1])
-        kept = kept[:4]
-        total = sum(w for _, w in kept) or 1.0
-
-        joints = [0, 0, 0, 0]
-        weights = [0.0, 0.0, 0.0, 0.0]
-        for slot, (index, weight) in enumerate(kept):
-            joints[slot] = index
-            weights[slot] = weight / total
-        return joints, weights
-
-    # -- morph targets -----------------------------------------------------
-
-    def _bake_morphs(self, group, ctx):
-        mesh = group.mesh
-        h = self.p.height
-        for grp in self.morph_groups:
-            displacement = grp.amount * h
-            deltas = []
-            touched = 0
-            positions = list(mesh.positions)
-            for i in range(mesh.vertex_count):
-                m = grp.mask(ctx, mesh.parts[i], mesh.positions[i],
-                             mesh.normals[i])
-                # masks may be negative: grooves such as the linea alba and the
-                # transverse ab lines pull the surface in
-                if abs(m) <= 1e-4:
-                    deltas.append((0.0, 0.0, 0.0))
-                    continue
-                touched += 1
-                d = vm.mul(mesh.normals[i], displacement * m)
-                deltas.append(d)
-                positions[i] = vm.add(mesh.positions[i], d)
-
-            if touched == 0:
-                # a group that touches nothing in this mesh still needs a slot:
-                # glTF requires every primitive of a mesh to expose the same
-                # target count in the same order
-                zeros = [(0.0, 0.0, 0.0)] * mesh.vertex_count
-                group.targets.append({"name": grp.name, "positions": zeros,
-                                      "normals": zeros, "touched": 0})
-                continue
-
-            morphed_normals = geom.weld_normals(
-                positions, geom.compute_normals_for(positions, mesh.indices))
-            normal_deltas = [vm.sub(morphed_normals[i], mesh.normals[i])
-                             for i in range(mesh.vertex_count)]
-            group.targets.append({"name": grp.name, "positions": deltas,
-                                  "normals": normal_deltas, "touched": touched})
 
     # -- reporting ---------------------------------------------------------
 

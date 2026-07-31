@@ -41,6 +41,23 @@ void main() {
     }
   });
 
+  test('the mesh extends beyond both wrist joints to include hands', () {
+    for (final preset in manifest.presets.values) {
+      final leftWrist =
+          preset.joints.firstWhere((j) => j.name == 'Hand_L').rest;
+      final rightWrist =
+          preset.joints.firstWhere((j) => j.name == 'Hand_R').rest;
+      final minimumExtension = preset.height * 0.045;
+
+      expect(preset.stats.boundsMax[0] - leftWrist.x,
+          greaterThan(minimumExtension),
+          reason: '${preset.id}: left arm ends at the wrist');
+      expect(rightWrist.x - preset.stats.boundsMin[0],
+          greaterThan(minimumExtension),
+          reason: '${preset.id}: right arm ends at the wrist');
+    }
+  });
+
   group('A-pose', () {
     test('the arms are abducted, not hanging', () {
       for (final preset in manifest.presets.values) {

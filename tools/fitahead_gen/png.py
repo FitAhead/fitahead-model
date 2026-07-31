@@ -63,30 +63,6 @@ class Canvas:
         return encode_png(self.size, self.size, self.px)
 
 
-def default_face(size=512, skin=(255, 226, 205), ink=(58, 44, 40),
-                 blush=(246, 150, 152)):
-    """A deliberately plain round face: two dots and a smile.
-
-    Kept minimal on purpose — it is a placeholder for the user's own drawing,
-    and anything more characterful would fight with what they replace it with.
-    """
+def default_face(size=512, skin=(255, 226, 205)):
     c = Canvas(size, (skin[0], skin[1], skin[2], 255))
-    s = size / 512.0
-
-    c.ellipse(size * 0.5, size * 0.5, size * 0.495, size * 0.495,
-              (skin[0], skin[1], skin[2]), softness=6.0 * s)
-
-    eye_y = size * 0.44
-    for dx in (-0.145, 0.145):
-        c.ellipse(size * (0.5 + dx), eye_y, 26 * s, 32 * s, ink, softness=2.0 * s)
-        # catchlight, so the eye reads as glossy rather than as a flat hole
-        c.ellipse(size * (0.5 + dx) + 9 * s, eye_y - 11 * s, 8 * s, 8 * s,
-                  (255, 255, 255), softness=1.2 * s)
-
-    c.arc(size * 0.5, size * 0.545, size * 0.115, 8.5 * s, 25, 155, ink)
-
-    for dx in (-0.245, 0.245):
-        c.ellipse(size * (0.5 + dx), size * 0.545, 34 * s, 22 * s, blush,
-                  softness=9.0 * s)
-
     return c.to_png()

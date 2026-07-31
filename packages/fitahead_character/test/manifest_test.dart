@@ -1,4 +1,6 @@
+import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:fitahead_character/fitahead_character.dart';
 import 'package:test/test.dart';
@@ -8,6 +10,14 @@ import 'package:test/test.dart';
 CharacterManifest loadManifest() => CharacterManifest.parse(
       File('../../assets/models/character_manifest.json').readAsStringSync(),
     );
+
+Map<String, dynamic> loadGlbJson(String filename) {
+  final bytes = File('../../assets/models/$filename').readAsBytesSync();
+  final header = ByteData.sublistView(bytes);
+  final jsonLength = header.getUint32(12, Endian.little);
+  final jsonText = utf8.decode(bytes.sublist(20, 20 + jsonLength)).trim();
+  return jsonDecode(jsonText) as Map<String, dynamic>;
+}
 
 void main() {
   late CharacterManifest manifest;
@@ -188,6 +198,31 @@ void main() {
       expect(preset.face.uvLayout, 'disc-inscribed-in-square');
       expect(preset.face.defaultTexture, manifest.faceTexture);
     }
+  });
+
+  test('male GLB contains short pants with the outfit material', () {
+    final glb = loadGlbJson(manifest.preset('male').file);
+    final meshes =
+        (glb['meshes'] as List<dynamic>).cast<Map<String, dynamic>>();
+    final materials =
+        (glb['materials'] as List<dynamic>).cast<Map<String, dynamic>>();
+    final shorts = meshes.singleWhere((mesh) => mesh['name'] == 'Shorts');
+    final primitive = (shorts['primitives'] as List<dynamic>)
+        .cast<Map<String, dynamic>>()
+        .single;
+    final attributes = primitive['attributes'] as Map<String, dynamic>;
+    final outfitIndex =
+        materials.indexWhere((material) => material['name'] == 'Outfit');
+    final targetNames =
+        (shorts['extras'] as Map<String, dynamic>)['targetNames'];
+
+    expect(outfitIndex, isNonNegative);
+    expect(primitive['material'], outfitIndex);
+    expect(attributes, containsPair('JOINTS_0', isA<int>()));
+    expect(attributes, containsPair('WEIGHTS_0', isA<int>()));
+    expect(primitive['targets'],
+        hasLength(manifest.preset('male').morphNames.length));
+    expect(targetNames, manifest.preset('male').morphNames);
   });
 
   test('referenced asset files exist next to the manifest', () {
