@@ -20,6 +20,14 @@ FitAhead의 Flutter 3D 캐릭터 — 모델 에셋과 그 도메인 모델.
 | ![](docs/renders/male-lean.png) | ![](docs/renders/male-average.png) | ![](docs/renders/male-athletic.png) | ![](docs/renders/male-muscular.png) | ![](docs/renders/male-overweight.png) |
 | 근육 0 · 지방 .08 | 근육 .30 · 지방 .42 | 근육 .62 · 지방 .24 | 근육 .92 · 지방 .16 | 근육 .22 · 지방 .86 |
 
+## 고해상도 근육질 쇼케이스
+
+![고해상도 근육질 남성 정면](docs/renders/muscular-static-preview.png)
+
+`muscular_static.glb`는 사실적인 근육과 손을 빠르게 확인하기 위한 정적 모델입니다.
+`character_manifest.json`의 `showcaseModels.muscular`로 접근할 수 있습니다. 리그와 모프 타겟은
+없으므로 운동량에 따른 체형 예측에는 `male.glb`를 사용합니다.
+
 여성 프리셋도 동일한 5종:
 
 | 마른 | 평범 | 근육질 | 과체중 |
