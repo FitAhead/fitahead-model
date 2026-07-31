@@ -12,6 +12,7 @@ class CharacterManifest {
     required this.version,
     required this.faceTexture,
     required this.showcaseModels,
+    required this.predictionModels,
     required this.presets,
   });
 
@@ -25,6 +26,10 @@ class CharacterManifest {
       faceTexture: json['faceTexture'] as String,
       showcaseModels: Map<String, String>.unmodifiable(
         (json['showcaseModels'] as Map<String, dynamic>).cast<String, String>(),
+      ),
+      predictionModels: Map<String, String>.unmodifiable(
+        (json['predictionModels'] as Map<String, dynamic>)
+            .cast<String, String>(),
       ),
       presets: Map.unmodifiable(presets),
     );
@@ -40,7 +45,13 @@ class CharacterManifest {
 
   final Map<String, String> showcaseModels;
 
+  final Map<String, String> predictionModels;
+
   final Map<String, CharacterPreset> presets;
+
+  /// Selects a dedicated result model when one exists, otherwise the preset.
+  String predictionModel(String presetId, String archetypeId) =>
+      predictionModels['$presetId:$archetypeId'] ?? preset(presetId).file;
 
   CharacterPreset preset(String id) {
     final p = presets[id];

@@ -5,6 +5,9 @@
   "showcaseModels": {
     "muscular": "muscular_static.glb"
   },
+  "predictionModels": {
+    "male:muscular": "muscular_static.glb"
+  },
   "presets": {
     "female": {
       "id": "female",

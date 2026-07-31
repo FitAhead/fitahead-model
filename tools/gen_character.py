@@ -26,6 +26,9 @@ FACE_TEXTURE = "face_default.png"
 SHOWCASE_MODELS: Final[dict[str, str]] = {
     "muscular": "muscular_static.glb",
 }
+PREDICTION_MODELS: Final[dict[str, str]] = {
+    "male:muscular": SHOWCASE_MODELS["muscular"],
+}
 
 
 def generate(out_dir, preset_names, face_size):
@@ -60,6 +63,7 @@ def generate(out_dir, preset_names, face_size):
         "generator": "tools/gen_character.py",
         "faceTexture": FACE_TEXTURE,
         "showcaseModels": SHOWCASE_MODELS,
+        "predictionModels": PREDICTION_MODELS,
         "presets": presets,
     }
     path = os.path.join(out_dir, "character_manifest.json")

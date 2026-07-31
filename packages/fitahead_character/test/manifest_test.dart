@@ -48,6 +48,12 @@ void main() {
         isNot(contains('muscular_static.glb')));
   });
 
+  test('uses the static muscular model for the male prediction endpoint', () {
+    expect(manifest.predictionModel('male', 'muscular'), 'muscular_static.glb');
+    expect(manifest.predictionModel('male', 'average'), 'male.glb');
+    expect(manifest.predictionModel('female', 'muscular'), 'female.glb');
+  });
+
   group('joints', () {
     test('indices match position, and every parent resolves', () {
       for (final preset in manifest.presets.values) {

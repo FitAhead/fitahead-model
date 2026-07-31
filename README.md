@@ -24,9 +24,9 @@ FitAhead의 Flutter 3D 캐릭터 — 모델 에셋과 그 도메인 모델.
 
 ![고해상도 근육질 남성 정면](docs/renders/muscular-static-preview.png)
 
-`muscular_static.glb`는 사실적인 근육과 손을 빠르게 확인하기 위한 정적 모델입니다.
-`character_manifest.json`의 `showcaseModels.muscular`로 접근할 수 있습니다. 리그와 모프 타겟은
-없으므로 운동량에 따른 체형 예측에는 `male.glb`를 사용합니다.
+`muscular_static.glb`는 사실적인 근육과 손을 보여주는 남성 운동 예측의 최종 근육질 모델입니다.
+`character_manifest.json`의 `predictionModels["male:muscular"]`로 선택합니다. 중간 체형은
+계속 `male.glb`의 모프를 사용하며, 정적 모델로 전환된 뒤에는 체형 보간이나 애니메이션을 할 수 없습니다.
 
 여성 프리셋도 동일한 5종:
 
@@ -135,7 +135,7 @@ VRM 계열 휴머노이드 애니메이션을 노드 인덱스가 아니라 본 
 - [x] 남성용 짧은 반바지 메시 + 체형 모프 연동
 - [x] 근육별 카메라 프레이밍 17종 (성장 여유분 포함)
 - [x] sparse accessor — 모프 6종 추가·정점 40% 증가에도 파일 크기 감소
-- [x] Dart 테스트 74개
+- [x] Dart 테스트 75개
 - [ ] 반바지 추가 후 Khronos 검증기 재실행
 - [ ] **렌더러 선택** — [설계 문서](docs/CHARACTER_DESIGN.md) 8절
 - [ ] 아이들/운동 애니메이션 클립
