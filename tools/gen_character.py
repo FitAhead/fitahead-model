@@ -12,6 +12,7 @@ import argparse
 import json
 import os
 import sys
+from typing import Final
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
@@ -22,6 +23,9 @@ DEFAULT_OUT = os.path.join(
     os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "assets", "models"
 )
 FACE_TEXTURE = "face_default.png"
+SHOWCASE_MODELS: Final[dict[str, str]] = {
+    "muscular": "muscular_static.glb",
+}
 
 
 def generate(out_dir, preset_names, face_size):
@@ -55,6 +59,7 @@ def generate(out_dir, preset_names, face_size):
         "version": 1,
         "generator": "tools/gen_character.py",
         "faceTexture": FACE_TEXTURE,
+        "showcaseModels": SHOWCASE_MODELS,
         "presets": presets,
     }
     path = os.path.join(out_dir, "character_manifest.json")

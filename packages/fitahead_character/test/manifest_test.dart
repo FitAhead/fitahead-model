@@ -41,6 +41,13 @@ void main() {
     expect(male.file, isNot(female.file));
   });
 
+  test('exposes the static muscular showcase separately from morph presets',
+      () {
+    expect(manifest.showcaseModels['muscular'], 'muscular_static.glb');
+    expect(manifest.presets.values.map((preset) => preset.file),
+        isNot(contains('muscular_static.glb')));
+  });
+
   group('joints', () {
     test('indices match position, and every parent resolves', () {
       for (final preset in manifest.presets.values) {
@@ -231,5 +238,8 @@ void main() {
     }
     expect(File('../../assets/models/${manifest.faceTexture}').existsSync(),
         isTrue);
+    for (final file in manifest.showcaseModels.values) {
+      expect(File('../../assets/models/$file').existsSync(), isTrue);
+    }
   });
 }

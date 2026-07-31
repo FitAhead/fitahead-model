@@ -42,6 +42,7 @@ FitAhead의 Flutter 3D 캐릭터 — 모델 에셋과 그 도메인 모델.
 ```
 assets/models/            생성된 에셋 (커밋됨)
   male.glb                   스킨 + 모프 타겟 16종 + 짧은 반바지
+  muscular_static.glb        고해상도 근육질 정적 쇼케이스
   female.glb                 스킨 + 모프 타겟 16종
   face_default.png          빈 얼굴 캔버스 (사용자 그림으로 교체)
   character_manifest.json   런타임 매니페스트
@@ -126,7 +127,7 @@ VRM 계열 휴머노이드 애니메이션을 노드 인덱스가 아니라 본 
 - [x] 남성용 짧은 반바지 메시 + 체형 모프 연동
 - [x] 근육별 카메라 프레이밍 17종 (성장 여유분 포함)
 - [x] sparse accessor — 모프 6종 추가·정점 40% 증가에도 파일 크기 감소
-- [x] Dart 테스트 73개
+- [x] Dart 테스트 74개
 - [ ] 반바지 추가 후 Khronos 검증기 재실행
 - [ ] **렌더러 선택** — [설계 문서](docs/CHARACTER_DESIGN.md) 8절
 - [ ] 아이들/운동 애니메이션 클립

@@ -11,6 +11,7 @@ class CharacterManifest {
   const CharacterManifest({
     required this.version,
     required this.faceTexture,
+    required this.showcaseModels,
     required this.presets,
   });
 
@@ -22,6 +23,9 @@ class CharacterManifest {
     return CharacterManifest(
       version: json['version'] as int,
       faceTexture: json['faceTexture'] as String,
+      showcaseModels: Map<String, String>.unmodifiable(
+        (json['showcaseModels'] as Map<String, dynamic>).cast<String, String>(),
+      ),
       presets: Map.unmodifiable(presets),
     );
   }
@@ -33,6 +37,8 @@ class CharacterManifest {
 
   /// Filename of the placeholder face texture, relative to the manifest.
   final String faceTexture;
+
+  final Map<String, String> showcaseModels;
 
   final Map<String, CharacterPreset> presets;
 

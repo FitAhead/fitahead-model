@@ -2,6 +2,9 @@
   "version": 1,
   "generator": "tools/gen_character.py",
   "faceTexture": "face_default.png",
+  "showcaseModels": {
+    "muscular": "muscular_static.glb"
+  },
   "presets": {
     "female": {
       "id": "female",
