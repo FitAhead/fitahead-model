@@ -150,3 +150,17 @@ VRM 계열 휴머노이드 애니메이션을 노드 인덱스가 아니라 본 
 
 - [docs/ANATOMY.md](docs/ANATOMY.md) — 모든 치수의 출처, 근육 13종의 방향과 배 위치, 검증 결과
 - [docs/CHARACTER_DESIGN.md](docs/CHARACTER_DESIGN.md) — 설계 판단 근거, 렌더러 후보
+
+## 캐릭터 아트 디렉션 시안
+
+![FitAhead 남녀 캐릭터와 운동 아이콘 디자인](docs/concepts/fitahead-3d-design.png)
+
+남녀 히어로 캐릭터, 체형 확인용 정면 아바타, 운동·건강·기록·목표 아이콘을 담은
+1536 × 1024 PNG 시안입니다. 밝은 아이스 블루 배경과 파스텔 스포츠웨어,
+부드러운 조명으로 앱의 시각적 방향을 제안합니다.
+
+내장 이미지 생성 도구로 제작한 래스터 이미지이며, 편집 가능한 3D 메시나 리그가 아닙니다.
+기존 GLB 모델의 구현 결과를 나타내는 렌더도 아닙니다.
+
+- [원본 PNG](docs/concepts/fitahead-3d-design.png)
+- [제작 프롬프트](docs/concepts/fitahead-3d-design-prompt.txt)
